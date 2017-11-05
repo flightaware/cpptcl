@@ -278,9 +278,7 @@ int callback_handler(ClientData, Tcl_Interp *interp,
      callback_map::iterator it = callbacks.find(interp);
      if (it == callbacks.end())
      {
-          Tcl_SetResult(interp,
-               "Trying to invoke non-existent callback (wrong interpreter?)",
-               TCL_STATIC);
+		 Tcl_SetObjResult (interp, Tcl_NewStringObj("Trying to invoke non-existent callback (wrong interpreter?)", -1));
           return TCL_ERROR;
      }
      
@@ -288,27 +286,21 @@ int callback_handler(ClientData, Tcl_Interp *interp,
      callback_interp_map::iterator iti = it->second.find(cmdName);
      if (iti == it->second.end())
      {
-          Tcl_SetResult(interp,
-               "Trying to invoke non-existent callback (wrong cmd name?)",
-               TCL_STATIC);
+		 Tcl_SetObjResult (interp, Tcl_NewStringObj("Trying to invoke non-existent callback (wrong cmd name?)", -1));
           return TCL_ERROR;
      }
      
      policies_map::iterator pit = call_policies.find(interp);
      if (pit == call_policies.end())
      {
-          Tcl_SetResult(interp,
-               "Trying to invoke callback with no known policies",
-               TCL_STATIC);
+		 Tcl_SetObjResult (interp, Tcl_NewStringObj("Trying to invoke callback with no known policies",-1));
           return TCL_ERROR;
      }
      
      policies_interp_map::iterator piti;
      if (find_policies(interp, cmdName, piti) == false)
      {
-          Tcl_SetResult(interp,
-               "Trying to invoke callback with no known policies",
-               TCL_STATIC);
+		 Tcl_SetObjResult (interp, Tcl_NewStringObj("Trying to invoke callback with no known policies", -1));
           return TCL_ERROR;
      }
 
@@ -322,12 +314,12 @@ int callback_handler(ClientData, Tcl_Interp *interp,
      }
      catch (exception const &e)
      {
-          Tcl_SetResult(interp, const_cast<char*>(e.what()), TCL_VOLATILE);
+          Tcl_SetObjResult(interp, Tcl_NewStringObj(const_cast<char*>(e.what()), -1));
           return TCL_ERROR;
      }
      catch (...)
      {
-          Tcl_SetResult(interp, "Unknown error.", TCL_STATIC);
+          Tcl_SetObjResult(interp, Tcl_NewStringObj("Unknown error.", -1));
           return TCL_ERROR;
      }
      
@@ -365,12 +357,12 @@ int object_handler(ClientData cd, Tcl_Interp *interp,
      }
      catch (exception const &e)
      {
-          Tcl_SetResult(interp, const_cast<char*>(e.what()), TCL_VOLATILE);
+          Tcl_SetObjResult(interp, Tcl_NewStringObj (const_cast<char*>(e.what()), -1));
           return TCL_ERROR;
      }
      catch (...)
      {
-          Tcl_SetResult(interp, "Unknown error.", TCL_STATIC);
+          Tcl_SetObjResult(interp, Tcl_NewStringObj("Unknown error.", -1));
           return TCL_ERROR;
      }
 
@@ -391,9 +383,8 @@ int constructor_handler(ClientData cd, Tcl_Interp *interp,
      callback_map::iterator it = constructors.find(interp);
      if (it == constructors.end())
      {
-          Tcl_SetResult(interp,
-               "Trying to invoke non-existent callback (wrong interpreter?)",
-               TCL_STATIC);
+          Tcl_SetObjResult(interp,
+               Tcl_NewStringObj ("Trying to invoke non-existent callback (wrong interpreter?)", -1));
           return TCL_ERROR;
      }
      
@@ -402,8 +393,7 @@ int constructor_handler(ClientData cd, Tcl_Interp *interp,
      if (iti == it->second.end())
      {
           Tcl_SetResult(interp,
-               "Trying to invoke non-existent callback (wrong class name?)",
-               TCL_STATIC);
+               Tcl_NewStringObj ("Trying to invoke non-existent callback (wrong class name?)", -1));
           return TCL_ERROR;
      }
      
@@ -411,8 +401,7 @@ int constructor_handler(ClientData cd, Tcl_Interp *interp,
      if (find_policies(interp, className, piti) == false)
      {
           Tcl_SetResult(interp,
-               "Trying to invoke callback with no known policies",
-               TCL_STATIC);
+               Tcl_NewStringObj ("Trying to invoke callback with no known policies", -1));
           return TCL_ERROR;
      }
 
@@ -437,7 +426,7 @@ int constructor_handler(ClientData cd, Tcl_Interp *interp,
      }
      catch (...)
      {
-          Tcl_SetResult(interp, "Unknown error.", TCL_STATIC);
+          Tcl_SetObjResult(interp, Tcl_NewStringObj("Unknown error.", -1));
           return TCL_ERROR;
      }
 
