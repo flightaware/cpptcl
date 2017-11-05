@@ -1,7 +1,7 @@
 COMPILER = g++
 CXXFLAGS = -Wall -Wno-long-long -pedantic
 MODULEFLAGS = -shared
-INCLUDES = -I.. -I/usr/local/include/tcl8.4 -I/usr/local/include/boost_1_33_1
+INCLUDES = -I.. -I/usr/local/include/tcl8.6 -I/usr/local/include/boost
 LIBDIRS = -L/usr/local/lib
 LIBS = -ltcl84
 
