@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>C++/Tcl</title>
+</head>
+<body>
+<table style="width: 100%; text-align: left;" border="0" cellpadding="2"
+ cellspacing="20">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"><font size="+3"><span
+ style="font-family: helvetica,arial,sans-serif; font-weight: bold; color: rgb(0, 0, 255);">C++/Tcl</span></font><br>
+      <span
+ style="font-family: helvetica,arial,sans-serif; color: rgb(0, 0, 255); font-weight: bold;">A
+C++ library for interoperability between C++ and Tcl</span> </td>
+      <td style="vertical-align: top; text-align: right;"><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+[<a href="quickstart.html">prev</a>][<a href="index.html">top</a>][<a
+ href="classes.html">next</a>]<br>
+<h4>Exposing Free Functions<br>
+</h4>
+You have already seen an example of how to expose a free C++ function
+to the Tcl interpreter.<br>
+No matter whether you write an extension module or embed Tcl in a C++
+application, the way to expose a free function is alway the same:<br>
+<br>
+<div style="margin-left: 40px;"><code>i.def("tcl_function_name",
+cpp_function_name);</code><br>
+</div>
+<br>
+where <code>i</code> is the name of the interpreter object.<br>
+In the above example, the <code>"tcl_function_name"</code> is a name
+that will be visible to the Tcl scripts and the <code>cpp_function_name</code>
+is a name of (or a pointer to) the function in the C++ code.<br>
+They do not have to be the same, although this is a usual practice,
+like in the <a href="quickstart.html">Quick Start</a> examples:<br>
+<br>
+<div style="margin-left: 40px;"><code>i.def("hello", hello);</code><br>
+</div>
+<br>
+In fact, anything that is a valid command name in Tcl can be used as
+the first parameter.<br>
+For example, let's suppose that we want to expose the following C++
+function:<br>
+<br>
+<div style="margin-left: 40px;"><code>int sum(int a, int b)<br>
+{<br>
+&nbsp;&nbsp;&nbsp;&nbsp; return a + b;<br>
+}</code><br>
+</div>
+<br>
+later we can define it in the interpreter like this:<br>
+<br>
+<div style="margin-left: 40px;"><code>i.def("<span
+ style="font-weight: bold;">add</span>", sum);</code><br>
+<code>i.def("<span style="font-weight: bold;">+</span>", sum);</code><br>
+<code></code></div>
+<br>
+so that we can call the <code>sum</code> function from Tcl like this:<br>
+<br>
+<div style="margin-left: 40px;"><code>add 3 4</code><br>
+</div>
+<br>
+or:<br>
+<br>
+<div style="margin-left: 40px;"><code>+ 3 4</code><br>
+</div>
+<br>
+As you see, the same function can be defined in the interpreter more
+than once, with different Tcl names.<br>
+If you try to define some function with the name that is already
+registered, the old registration will be overwritten.<br>
+<br>
+You have also noticed that the exposed functions can have parameters
+and return values.<br>
+Functions with up to 9 parameters can be exposed.<br>
+<br>
+At the moment, parameters and the return value of exposed functions can
+have the following types:<br>
+<ul>
+  <li>std::string, char const *<br>
+  </li>
+  <li>int,</li>
+  <li>long,</li>
+  <li>bool,</li>
+  <li>double,</li>
+  <li>pointer to arbitrary type</li>
+  <li><a href="objects.html">object</a><br>
+  </li>
+</ul>
+In addition, the parameter of the function can be of type <code>T
+const &amp;</code>, where T is any of the above.<br>
+This means that only <span style="font-style: italic;">input</span>
+parameters are supported (this may change in future versions of the
+libray).<br>
+<br>
+<br>
+[<a href="quickstart.html">prev</a>][<a href="index.html">top</a>][<a
+ href="classes.html">next</a>]<br>
+<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006,
+Maciej
+Sobczak<br>
+<br>
+</body>
+</html>

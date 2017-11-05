@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>C++/Tcl</title>
+</head>
+<body>
+<table style="width: 100%; text-align: left;" border="0" cellpadding="2"
+ cellspacing="20">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"><font size="+3"><span
+ style="font-family: helvetica,arial,sans-serif; font-weight: bold; color: rgb(0, 0, 255);">C++/Tcl</span></font><br>
+      <span
+ style="font-family: helvetica,arial,sans-serif; color: rgb(0, 0, 255); font-weight: bold;">A
+C++ library for interoperability between C++ and Tcl</span> </td>
+      <td style="vertical-align: top; text-align: right;"><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+[<a href="goodies.html">prev</a>][<a href="index.html">top</a>][<a
+ href="compiling.html">next</a>]<br>
+<h4>Errors<br>
+</h4>
+All Tcl errors, conversion errors and others that may take place when
+calling Tcl code from C++, are translated and reported as exceptions of
+the <code>tcl_error</code> type:<br>
+<br>
+<div style="margin-left: 40px;"><code>namespace Tcl</code><br>
+<code>{</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; class tcl_error : public
+std::runtime_error</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; {</code><br>
+<code>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;&nbsp; // ...</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; };</code><br>
+<code>}</code><br>
+<code></code></div>
+<br>
+This means that the simplest framework for handling such errors may
+look
+like:<br>
+<br>
+<div style="margin-left: 40px;"><code>int main()</code><br>
+<code>{</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; try</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; {</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+interpreter i;</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //
+...</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; }</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; catch (tcl_error const &amp;e)</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; {</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // some
+Tcl error</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; }</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; catch (exception const &amp;e)</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; {</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // some
+other error</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; }</code><br>
+<code>}</code><br>
+<code></code></div>
+<br>
+On the other hand, when calling C++ from Tcl, all C++ exceptions are
+translated and presented as regular Tcl errors, with error message
+taken from the C++ exception, if it was from the <code>std::exception</code>
+family. For all other C++ exceptions, the <code>"Unknown error."</code>
+message is returned.<br>
+<br>
+<br>
+[<a href="goodies.html">prev</a>][<a href="index.html">top</a>][<a
+ href="compiling.html">next</a>]<br>
+<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006,
+Maciej
+Sobczak<br>
+<br>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>C++/Tcl</title>
+</head>
+<body>
+<table style="width: 100%; text-align: left;" border="0" cellpadding="2"
+ cellspacing="20">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"><font size="+3"><span
+ style="font-family: helvetica,arial,sans-serif; font-weight: bold; color: rgb(0, 0, 255);">C++/Tcl</span></font><br>
+      <span
+ style="font-family: helvetica,arial,sans-serif; color: rgb(0, 0, 255); font-weight: bold;">A
+C++ library for interoperability between C++ and Tcl</span> </td>
+      <td style="vertical-align: top; text-align: right;"><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+[<a href="errors.html">prev</a>][<a href="index.html">top</a>]<br>
+<h4>Compiling<br>
+</h4>
+The C++/Tcl library consists of the following files:<br>
+<ul>
+  <li><code>cpptcl.h</code> - to be <code>#include</code>d in your own
+projects,<br>
+  </li>
+  <li><code>cpptcl.cc</code> - to be linked with your own projects,</li>
+  <li>a couple of additional files in the <code>details</code>
+directory - this directory should be visible on the include search path.<br>
+  </li>
+</ul>
+The C++/Tcl library depends on the Tcl core library and on the Boost
+library (see <a target="_blank" href="http://www.boost.org/">http://www.boost.org/</a>).
+Any recent version of these two should work fine.<br>
+<br>
+Note: The Boost library is used in a way that does not require its
+installation nor even compilation. It is enough to just download the
+Boost distribution and unpack it in a place where it will be found by
+the compiler.<br>
+<br>
+Note: In its current version, the C++/Tcl library is not thread-safe in
+the sense that it should not be used in the multithreaded environment,
+where many threads can register new commands or use extended commands
+in scripts.<br>
+<h4>Unix, GNU/Linux</h4>
+On Unix-like systems, the following command is enough to compile a
+one-file C++/Tcl program (shown for FreeBSD):<br>
+<br>
+<code>$ g++ myprog.cc cpptcl.cc -o myprog
+-I/usr/local/include/tcl8.4 -I/usr/local/include/boost_1_33_0
+-L/usr/local/lib -ltcl84<br>
+</code><br>
+Similarly, the following compiles a simple loadable shared module:<br>
+<br>
+<code>$ g++ mymodule.cc cpptcl.cc -shared -o myprog
+-I/usr/local/include/tcl8.4 -I/usr/local/include/boost_1_33_0<br>
+</code><br>
+Depending on the specific Unix system, it may be necessary to use
+different search paths.<br>
+Note also that a decent g++ compiler is necessary (in particular, g++
+2.95 or 2.96 will not work).<br>
+<br>
+The <code>Makefile</code>s provided with test and example programs
+should serve as good examples.<br>
+<br>
+<br>
+[<a href="errors.html">prev</a>][<a href="index.html">top</a>]<br>
+<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006,
+Maciej
+Sobczak<br>
+<br>
+</body>
+</html>

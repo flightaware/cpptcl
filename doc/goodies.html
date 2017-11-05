@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>C++/Tcl</title>
+</head>
+<body>
+<table style="width: 100%; text-align: left;" border="0" cellpadding="2"
+ cellspacing="20">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"><font size="+3"><span
+ style="font-family: helvetica,arial,sans-serif; font-weight: bold; color: rgb(0, 0, 255);">C++/Tcl</span></font><br>
+      <span
+ style="font-family: helvetica,arial,sans-serif; color: rgb(0, 0, 255); font-weight: bold;">A
+C++ library for interoperability between C++ and Tcl</span> </td>
+      <td style="vertical-align: top; text-align: right;"><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+[<a href="callpolicies.html">prev</a>][<a href="index.html">top</a>][<a
+ href="errors.html">next</a>]<br>
+<h4>Various Goodies<br>
+</h4>
+This section of the documentation covers a couple of additional
+important features.<br>
+<br>
+<h4><a name="packages"></a>Package support</h4>
+It is possible to define a package name and version for the extension.
+Use the <code>pkg_provide</code> member function when defining a
+loadable module:<br>
+<br>
+<div style="margin-left: 40px;"><code>CPPTCL_MODULE(Mymodule, i)</code><br>
+<code>{<br>
+&nbsp;&nbsp;&nbsp; i.pkg_provide("MyPackage", "3.4");<br>
+&nbsp;&nbsp;&nbsp; // ...<br>
+</code><code></code><code>}</code><br>
+<code></code></div>
+<br>
+After loading this module inside the Tcl interpreter, the following
+command shows that the package is indeed provided:<br>
+<br>
+<div style="margin-left: 40px;"><code>% package provide MyPackage</code><br>
+<code>3.4</code><br>
+<code>%</code><br>
+<code></code></div>
+<br>
+<h4><a name="streameval"></a>Stream evaluation</h4>
+It is possible to evaluate the contents of the input stream. One of the
+possible uses is the evaluation of the whole file:<br>
+<br>
+<div style="margin-left: 40px;"><code>ifstream f("somescript.tcl");</code><br>
+<code>i.eval(f);</code><br>
+<code></code></div>
+<br>
+Any object compatible with <code>std::istream</code> is accepted.<br>
+<h4><a name="namespaces"></a>Tcl Namespaces</h4>
+Tcl supports namespaces. It is possible to define classes and functions
+within their own namespace by just prefixing the name with the
+namespace
+name:<br>
+<br>
+<div style="margin-left: 40px;"><code>i.def("NS::fun", fun);</code><br>
+</div>
+<br>
+The above example defines a new function <code>fun</code>, which will
+be visible in the <code>NS</code> namespace.<br>
+The problem is that the Tcl namespace needs to be created before any
+name is added to it. This can be done by simple script evaluation.<br>
+Example:<br>
+<br>
+<div style="margin-left: 40px;"><code>CPPTCL_MODULE(Mymodule, i)</code><br>
+<code>{</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; i.eval("namespace eval NS {}");</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; i.def("NS::fun", fun);</code><br>
+<code>}</code><br>
+<code></code></div>
+<br>
+<h4><a name="safe"></a>Safe Tcl Interpreters</h4>
+Each Tcl interpreter can be turned into a <span
+ style="font-style: italic;">safe</span> interpreter, where dangerous
+commands (which are commands related to files, sockets, process
+control, etc.) cannot be called.<br>
+This feature may be very useful when user-provided scripts are to be
+evaluated in the embedded Tcl interpreter. <br>
+In order to make a safe interpreter, do this:<br>
+<br>
+<div style="margin-left: 40px;"><code>i.make_safe();</code><br>
+</div>
+<br>
+Once the interpreter is made safe, it cannot be put back to its normal
+form.<br>
+<br>
+<h4><a name="aliasing"></a>Aliasing</h4>
+Aliasing is a powerful feature of Tcl. It allows to define <span
+ style="font-style: italic;">links</span> between two interpreters, so
+that when one command is invoked in one interpreter, it is just
+forwarded and executed within the second interpreter. This means that
+the given command will have access to the other interpreter's state
+(its commands, variables, etc.).<br>
+This feature is useful when a "firewall" interpreter is created that
+provides access to only selected set of commands defined in another
+interpreter.<br>
+In order to make an alias from interpreter <code>i1</code> to
+interpreter <code>i2</code>, do this:<br>
+<br>
+<div style="margin-left: 40px;"><code>i1.create_alias("fun", i2,
+"otherFun");</code><br>
+</div>
+<br>
+The above instruction creates an alias in the interpreter <code>i1</code>,
+so that whenever the fun command is invoked in it, it will forward the
+call to the second interpreter, to the <code>otherFun</code> command.<br>
+<br>
+<br>
+[<a href="callpolicies.html">prev</a>][<a href="index.html">top</a>][<a
+ href="errors.html">next</a>]<br>
+<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006,
+Maciej
+Sobczak<br>
+<br>
+</body>
+</html>

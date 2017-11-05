@@ -1,0 +1,46 @@
+This file contains the history of changes in the C++/Tcl library.
+
+---
+The version 1.1.3 differs from 1.1.2 in the following ways:
+
+- A bug in the initialization of interpreter object was fixed.
+
+---
+The version 1.1.2 differs from 1.1.1 in the following ways:
+
+- Copyright was updated to cover 2006.
+
+- Information was added to docs about the usage of the Boost library.
+
+- Few bug fixes were applied to allow empty parameter lists with variadic
+  functions.
+
+---
+The version 1.1.1 differs from 1.1.0 in the following ways:
+
+- Explicit instantiations of some templates were moved to proper namespace.
+
+
+---
+The version 1.1.0 differs from 1.0.0 in the following ways:
+
+- CHANGES file was added.
+
+- LICENSE file was added with clear description of the license terms.
+
+- Copyright was updated to cover 2005.
+
+- Small patch was added to make the code compile on g++ 3.2.
+
+- New assign method was added that accepts Tcl_Obj.
+
+- Overload of interpreter::eval was added that accepts istream& parameter.
+  This allows to evaluate the contents of arbitrary stream
+  (for example, a file).
+
+- Support for package definitions was added.
+
+- Support for const class member functions was added.
+
+- Support for variadic free functions, constructors and class methods
+  was added.

@@ -1,0 +1,11 @@
+I would like to thank you very much for your contributions:
+
+---
+Alexey Pakhunov provided patches with various bugfixes and enhancements.
+His patches were used in the 1.1.2 release.
+
+---
+Christoph Pesch provided a small patch for the g++ 3.2 compiler.
+
+After the 1.1.0 release, Christoph provided also a patch for newer g++ 3.4.3.
+(included in 1.1.1)
