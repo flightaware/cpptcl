@@ -16,9 +16,7 @@
 #include <sstream>
 #include <map>
 #include <vector>
-#include <boost/shared_ptr.hpp>
-#include <boost/bind.hpp>
-
+#include <functional>
 
 namespace Tcl
 {
@@ -140,14 +138,14 @@ public:
      class_handler_base();
 
      void register_method(std::string const &name,
-          boost::shared_ptr<object_cmd_base> ocb, policies const &p);
+          std::shared_ptr<object_cmd_base> ocb, policies const &p);
 
      policies & get_policies(std::string const &name);
 
 protected:
      typedef std::map<
           std::string,
-          boost::shared_ptr<object_cmd_base>
+          std::shared_ptr<object_cmd_base>
           > method_map_type;
 
      // a map of methods for the given class
@@ -213,14 +211,14 @@ template <class C>
 class class_definer
 {
 public:
-     class_definer(boost::shared_ptr<class_handler<C> > ch) : ch_(ch) {}
+     class_definer(std::shared_ptr<class_handler<C> > ch) : ch_(ch) {}
 
      template <typename R>
      class_definer & def(std::string const &name, R (C::*f)(),
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method0<C, R>(f)), p);
           return *this;
      }
@@ -230,7 +228,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method0<C, R>(f)), p);
           return *this;
      }
@@ -240,7 +238,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method1<C, R, T1>(f)), p);
           return *this;
      }
@@ -250,7 +248,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method1<C, R, T1>(f)), p);
           return *this;
      }
@@ -260,7 +258,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method2<C, R, T1, T2>(f)), p);
           return *this;
      }
@@ -270,7 +268,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method2<C, R, T1, T2>(f)), p);
           return *this;
      }
@@ -280,7 +278,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method3<C, R, T1, T2, T3>(f)), p);
           return *this;
      }
@@ -290,7 +288,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method3<C, R, T1, T2, T3>(f)), p);
           return *this;
      }
@@ -300,7 +298,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method4<C, R, T1, T2, T3, T4>(f)), p);
           return *this;
      }
@@ -311,7 +309,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method4<C, R, T1, T2, T3, T4>(f)), p);
           return *this;
      }
@@ -322,7 +320,7 @@ public:
           R (C::*f)(T1, T2, T3, T4, T5), policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method5<C, R, T1, T2, T3, T4, T5>(f)), p);
           return *this;
      }
@@ -333,7 +331,7 @@ public:
           R (C::*f)(T1, T2, T3, T4, T5) const, policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method5<C, R, T1, T2, T3, T4, T5>(f)), p);
           return *this;
      }
@@ -344,7 +342,7 @@ public:
           R (C::*f)(T1, T2, T3, T4, T5, T6), policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method6<C, R, T1, T2, T3, T4, T5, T6>(f)),
                p);
           return *this;
@@ -357,7 +355,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method6<C, R, T1, T2, T3, T4, T5, T6>(f)),
                p);
           return *this;
@@ -370,7 +368,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method7<C, R,
                     T1, T2, T3, T4, T5, T6, T7>(f)), p);
           return *this;
@@ -383,7 +381,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method7<C, R,
                     T1, T2, T3, T4, T5, T6, T7>(f)), p);
           return *this;
@@ -396,7 +394,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method8<C, R,
                     T1, T2, T3, T4, T5, T6, T7, T8>(f)), p);
           return *this;
@@ -409,7 +407,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method8<C, R,
                     T1, T2, T3, T4, T5, T6, T7, T8>(f)), p);
           return *this;
@@ -422,7 +420,7 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method9<C, R,
                     T1, T2, T3, T4, T5, T6, T7, T8, T9>(f)), p);
           return *this;
@@ -435,14 +433,14 @@ public:
           policies const &p = policies())
      {
           ch_->register_method(name,
-               boost::shared_ptr<details::object_cmd_base>(
+               std::shared_ptr<details::object_cmd_base>(
                     new details::method9<C, R,
                     T1, T2, T3, T4, T5, T6, T7, T8, T9>(f)), p);
           return *this;
      }
 
 private:
-     boost::shared_ptr<class_handler<C> > ch_;
+     std::shared_ptr<class_handler<C> > ch_;
 };
 
 } // namespace details
@@ -481,7 +479,7 @@ public:
           policies const &p = policies())
      {
           add_function(name,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback0<R>(f)), p);
      }
 
@@ -490,7 +488,7 @@ public:
           policies const &p = policies())
      {
           add_function(name,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback1<R, T1>(f)), p);
      }
 
@@ -499,7 +497,7 @@ public:
           policies const &p = policies())
      {
           add_function(name,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback2<R, T1, T2>(f)), p);
      }
 
@@ -508,7 +506,7 @@ public:
           policies const &p = policies())
      {
           add_function(name,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback3<R, T1, T2, T3>(f)), p);
      }
 
@@ -517,7 +515,7 @@ public:
           policies const &p = policies())
      {
           add_function(name,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback4<R, T1, T2, T3, T4>(f)), p);
      }
 
@@ -527,7 +525,7 @@ public:
           policies const &p = policies())
      {
           add_function(name,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback5<R, T1, T2, T3, T4, T5>(f)), p);
      }
 
@@ -537,7 +535,7 @@ public:
           policies const &p = policies())
      {
           add_function(name,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback6<R, T1, T2, T3, T4, T5, T6>(f)), p);
      }
 
@@ -547,7 +545,7 @@ public:
           policies const &p = policies())
      {
           add_function(name,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback7<R,
                     T1, T2, T3, T4, T5, T6, T7>(f)), p);
      }
@@ -558,7 +556,7 @@ public:
           policies const &p = policies())
      {
           add_function(name,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback8<R,
                     T1, T2, T3, T4, T5, T6, T7, T8>(f)), p);
      }
@@ -571,7 +569,7 @@ public:
           policies const &p = policies())
      {
           add_function(name,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback9<R,
                     T1, T2, T3, T4, T5, T6, T7, T8, T9>(f)), p);
      }
@@ -582,13 +580,13 @@ public:
      template <class C>
      details::class_definer<C> class_(std::string const &name)
      {
-          boost::shared_ptr<details::class_handler<C> > ch(
+          std::shared_ptr<details::class_handler<C> > ch(
                new details::class_handler<C>());
 
           add_class(name, ch);
 
           add_constructor(name, ch,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new details::callback0<C*>(&details::construct<
                          C, void, void, void, void, void, void, void,
                          void, void>::doit)));
@@ -607,13 +605,13 @@ public:
                C, T1, T2, T3, T4, T5, T6, T7, T8, T9>::type
                callback_type;
 
-          boost::shared_ptr<details::class_handler<C> > ch(
+          std::shared_ptr<details::class_handler<C> > ch(
                new details::class_handler<C>());
 
           add_class(name, ch);
 
           add_constructor(name, ch,
-               boost::shared_ptr<details::callback_base>(
+               std::shared_ptr<details::callback_base>(
                     new callback_type(&details::construct<
                          C, T1, T2, T3, T4, T5, T6, T7, T8, T9>::doit)), p);
 
@@ -624,7 +622,7 @@ public:
      details::class_definer<C> class_(
           std::string const &name, details::no_init_type const &)
      {
-          boost::shared_ptr<details::class_handler<C> > ch(
+          std::shared_ptr<details::class_handler<C> > ch(
                new details::class_handler<C>());
 
           add_class(name, ch);
@@ -659,15 +657,15 @@ private:
      void operator=(const interpreter &);
 
      void add_function(std::string const &name,
-          boost::shared_ptr<details::callback_base> cb,
+          std::shared_ptr<details::callback_base> cb,
           policies const &p = policies());
 
      void add_class(std::string const &name,
-          boost::shared_ptr<details::class_handler_base> chb);
+          std::shared_ptr<details::class_handler_base> chb);
 
      void add_constructor(std::string const &name,
-          boost::shared_ptr<details::class_handler_base> chb,
-          boost::shared_ptr<details::callback_base> cb,
+          std::shared_ptr<details::class_handler_base> chb,
+          std::shared_ptr<details::callback_base> cb,
           policies const &p = policies());
 
      Tcl_Interp *interp_;

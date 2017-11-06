@@ -16,8 +16,6 @@
 using namespace Tcl;
 using namespace Tcl::details;
 using namespace std;
-using namespace boost;
-
 
 result::result(Tcl_Interp *interp) : interp_(interp) {}
 
@@ -392,7 +390,7 @@ int constructor_handler(ClientData cd, Tcl_Interp *interp,
      callback_interp_map::iterator iti = it->second.find(className);
      if (iti == it->second.end())
      {
-          Tcl_SetResult(interp,
+          Tcl_SetObjResult(interp,
                Tcl_NewStringObj ("Trying to invoke non-existent callback (wrong class name?)", -1));
           return TCL_ERROR;
      }
@@ -400,7 +398,7 @@ int constructor_handler(ClientData cd, Tcl_Interp *interp,
      policies_interp_map::iterator piti;
      if (find_policies(interp, className, piti) == false)
      {
-          Tcl_SetResult(interp,
+          Tcl_SetObjResult(interp,
                Tcl_NewStringObj ("Trying to invoke callback with no known policies", -1));
           return TCL_ERROR;
      }

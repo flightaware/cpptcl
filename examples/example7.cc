@@ -1,6 +1,6 @@
 // example7.cc
 
-#include "cpptcl.h"
+#include "../cpptcl.h"
 
 using namespace Tcl;
 
