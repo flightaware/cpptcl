@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(Mymodule)
 
-find_library(TCLLIB NAMES tcl8.6 HINTS "$ENV{HOME}/git/tcl/build")
-find_library(TCLSTUBLIB NAMES tclstub8.6 HINTS "$ENV{HOME}/git/tcl/build")
+find_library(TCLLIB NAMES tcl8.6 HINTS "$ENV{HOME}/git/tcl/build" PATHS "/usr/local/lib")
+find_library(TCLSTUBLIB NAMES tclstub8.6 HINTS "$ENV{HOME}/git/tcl/build" PATHS "/usr/local/lib")
 
 if(NOT TCLLIB)
   message(FATAL_ERROR "tcl8.6 library not found")
