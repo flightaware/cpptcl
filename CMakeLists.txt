@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(example7)
+project(Mymodule)
 
 find_library(TCLLIB NAMES tcl8.6 HINTS "$ENV{HOME}/git/tcl/build")
 find_library(TCLSTUBLIB NAMES tclstub8.6 HINTS "$ENV{HOME}/git/tcl/build")
@@ -31,5 +31,5 @@ list(APPEND SRCS details/metahelpers.h)
 list(APPEND SRCS details/methods.h) 
 list(APPEND SRCS details/methods_v.h)
 
-add_library(example7 SHARED ${SRCS})
-target_link_libraries(example7 ${TCLLIB} ${TCLSTUBLIB})
+add_library(Mymodule SHARED ${SRCS})
+target_link_libraries(Mymodule ${TCLLIB} ${TCLSTUBLIB})
