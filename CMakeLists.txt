@@ -1,13 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(Mymodule)
+project(cpplib)
 
-find_library(TCLLIB NAMES tcl8.6 PATHS "/usr/local/Cellar/tcl-tk/8.6.6_2/lib")
-find_library(TCLSTUBLIB NAMES tclstub8.6 PATHS "/usr/local/Cellar/tcl-tk/8.6.6_2/lib")
-
-if(NOT TCLLIB)
-  message(FATAL_ERROR "tcl8.6 library not found")
-endif()
+find_library(TCLSTUBLIB NAMES tclstub8.6 HINTS "$ENV{HOME}/git/tcl/build" PATHS "/usr/local/lib")
 
 if(NOT TCLSTUBLIB)
   message(FATAL_ERROR "tclstub8.6 library not found")
@@ -17,7 +12,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 include_directories(. details /usr/local/include)
 
-add_compile_options(-std=c++11 -stdlib=libc++ -Weverything)
+add_compile_options(-DUSE_TCL_STUBS -std=c++11 -stdlib=libc++ -Weverything)
 
 list(APPEND SRCS cpptcl.cc)
 list(APPEND SRCS cpptcl.h)
@@ -31,5 +26,5 @@ list(APPEND SRCS details/metahelpers.h)
 list(APPEND SRCS details/methods.h) 
 list(APPEND SRCS details/methods_v.h)
 
-add_library(Mymodule SHARED ${SRCS})
-target_link_libraries(Mymodule ${TCLLIB} ${TCLSTUBLIB})
+add_library(cpplib SHARED ${SRCS})
+target_link_libraries(cpplib ${TCLLIB} ${TCLSTUBLIB})

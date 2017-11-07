@@ -10,7 +10,7 @@ void hello()
      cout << "Hello C++/Tcl!" << endl;
 }
 
-CPPTCL_MODULE(Mymodule, i)
+CPPTCL_MODULE(Cpplib, i)
 {
      i.def("hello", hello);
 }

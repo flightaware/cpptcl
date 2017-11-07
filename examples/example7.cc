@@ -20,7 +20,7 @@ int sumAll(object const &argv)
      return sum;
 }
 
-CPPTCL_MODULE(Mymodule, i)
+CPPTCL_MODULE(Cpplib, i)
 {
      i.def("sum", sumAll, variadic());
 }

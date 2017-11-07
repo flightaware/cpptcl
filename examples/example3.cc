@@ -17,7 +17,7 @@ private:
 };
 
 
-CPPTCL_MODULE(Mymodule, i)
+CPPTCL_MODULE(Cpplib, i)
 {
      i.class_<Person>("Person")
           .def("setName", &Person::setName)

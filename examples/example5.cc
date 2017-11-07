@@ -30,7 +30,7 @@ void killPerson(Person *p)
      delete p;
 }
 
-CPPTCL_MODULE(Mymodule, i)
+CPPTCL_MODULE(Cpplib, i)
 {
      // note that the Person class is exposed without any constructor
      i.class_<Person>("Person", no_init)

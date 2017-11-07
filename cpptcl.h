@@ -858,6 +858,7 @@ namespace details
 #define CPPTCL_MODULE(name, i) void name##_cpptcl_Init(Tcl::interpreter &i); \
      extern "C" int name##_Init(Tcl_Interp *interp) \
      { \
+	  Tcl_InitStubs(interp, "8.3", 0); \
           Tcl::interpreter i(interp, false); \
           name##_cpptcl_Init(i); \
           return TCL_OK; \
