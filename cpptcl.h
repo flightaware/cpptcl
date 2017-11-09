@@ -52,6 +52,7 @@ policies variadic();
 
 class interpreter;
 class object;
+class objectref;
 
 namespace details {
 

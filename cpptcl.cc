@@ -758,7 +758,7 @@ void interpreter::add_constructor(string const &name, shared_ptr<class_handler_b
 	call_policies[interp_][name] = p;
 }
 
-int tcl_cast<int>::from(Tcl_Interp *interp, Tcl_Obj *obj) {
+int tcl_cast<int>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	int res;
 	int cc = Tcl_GetIntFromObj(interp, obj, &res);
 	if (cc != TCL_OK) {
@@ -768,7 +768,7 @@ int tcl_cast<int>::from(Tcl_Interp *interp, Tcl_Obj *obj) {
 	return res;
 }
 
-long tcl_cast<long>::from(Tcl_Interp *interp, Tcl_Obj *obj) {
+long tcl_cast<long>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	long res;
 	int cc = Tcl_GetLongFromObj(interp, obj, &res);
 	if (cc != TCL_OK) {
@@ -778,7 +778,7 @@ long tcl_cast<long>::from(Tcl_Interp *interp, Tcl_Obj *obj) {
 	return res;
 }
 
-bool tcl_cast<bool>::from(Tcl_Interp *interp, Tcl_Obj *obj) {
+bool tcl_cast<bool>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	int res;
 	int cc = Tcl_GetBooleanFromObj(interp, obj, &res);
 	if (cc != TCL_OK) {
@@ -788,7 +788,7 @@ bool tcl_cast<bool>::from(Tcl_Interp *interp, Tcl_Obj *obj) {
 	return res != 0;
 }
 
-double tcl_cast<double>::from(Tcl_Interp *interp, Tcl_Obj *obj) {
+double tcl_cast<double>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	double res;
 	int cc = Tcl_GetDoubleFromObj(interp, obj, &res);
 	if (cc != TCL_OK) {
@@ -798,13 +798,25 @@ double tcl_cast<double>::from(Tcl_Interp *interp, Tcl_Obj *obj) {
 	return res;
 }
 
-string tcl_cast<string>::from(Tcl_Interp *, Tcl_Obj *obj) { return Tcl_GetString(obj); }
+string tcl_cast<string>::from(Tcl_Interp *, Tcl_Obj *obj, bool) {
+    return Tcl_GetString(obj);
+}
 
-char const *tcl_cast<char const *>::from(Tcl_Interp *, Tcl_Obj *obj) { return Tcl_GetString(obj); }
+char const *tcl_cast<char const *>::from(Tcl_Interp *, Tcl_Obj *obj, bool) { return Tcl_GetString(obj); }
 
-object tcl_cast<object>::from(Tcl_Interp *interp, Tcl_Obj *obj) {
+object tcl_cast<object>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	object o(obj);
 	o.set_interp(interp);
 
 	return o;
+}
+
+objectref tcl_cast<objectref>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool byReference) {
+    // TODO implement by reference
+    if (byReference) {
+        obj = Tcl_ObjGetVar2(interp, obj, NULL, 0);
+    }
+    objectref o(obj);
+    o.set_interp(interp);
+    return o;
 }

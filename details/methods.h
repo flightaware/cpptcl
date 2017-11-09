@@ -55,19 +55,20 @@ public:
           int objc, Tcl_Obj * CONST objv[], policies const &)
      {
           check_params_no(objc, 3);
+         tcl_cast_by_reference<T1> byRef;
           
           C *p = static_cast<C*>(pv);
           if (cmem_)
           {
                dispatch<R>::template do_dispatch<T1>(
                     interp, std::bind(cf_, p, _1),
-                    tcl_cast<T1>::from(interp, objv[2]));
+                    tcl_cast<T1>::from(interp, objv[2], byRef.value));
           }
           else
           {
                dispatch<R>::template do_dispatch<T1>(
                     interp, std::bind(f_, p, _1),
-                    tcl_cast<T1>::from(interp, objv[2]));
+                    tcl_cast<T1>::from(interp, objv[2], byRef.value));
           }
      }
 

@@ -133,4 +133,16 @@ template <> char const *object::get<char const *>(interpreter &i) const;
 template <> std::string object::get<std::string>(interpreter &i) const;
 template <> std::vector<char> object::get<std::vector<char>>(interpreter &i) const;
 
+class objectref {
+public:
+    objectref(Tcl_Obj *obj) : object(obj) {}
+    void set_interp(Tcl_Interp *interp) { this->interp = interp; }
+    Tcl_Interp *get_interp() const { return interp; }
+    object const& get() const { return object; }
+    
+private:
+    object object;
+    Tcl_Interp *interp;
+};
+
 #endif /* CPPTCL_OBJECT_H */

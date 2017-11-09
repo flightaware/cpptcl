@@ -20,7 +20,7 @@ struct tcl_cast;
 template <typename T>
 struct tcl_cast<T*>
 {
-     static T * from(Tcl_Interp *, Tcl_Obj *obj)
+     static T * from(Tcl_Interp *, Tcl_Obj *obj, bool byReference)
      {
           std::string s(Tcl_GetString(obj));
           if (s.size() == 0)
@@ -49,53 +49,72 @@ struct tcl_cast<T*>
 template <typename T>
 struct tcl_cast<T const &>
 {
-     static T from(Tcl_Interp *interp, Tcl_Obj *obj)
+     static T from(Tcl_Interp *interp, Tcl_Obj *obj, bool byReference)
      {
-          return tcl_cast<T>::from(interp, obj);
+          return tcl_cast<T>::from(interp, obj, byReference);
      }
 };
 
+template <typename T>
+class tcl_cast_by_reference
+{
+public:
+    static bool const value = false;
+};
+
+template <>
+class tcl_cast_by_reference<objectref const &>
+{
+public:
+    static bool const value = true;
+};
 
 // the following specializations are implemented
 
 template <>
 struct tcl_cast<int>
 {
-     static int from(Tcl_Interp *, Tcl_Obj *);
+     static int from(Tcl_Interp *, Tcl_Obj *, bool byReference = false);
 };
 
 template <>
 struct tcl_cast<long>
 {
-     static long from(Tcl_Interp *, Tcl_Obj *);
+     static long from(Tcl_Interp *, Tcl_Obj *, bool byReference = false);
 };
 
 template <>
 struct tcl_cast<bool>
 {
-     static bool from(Tcl_Interp *, Tcl_Obj *);
+     static bool from(Tcl_Interp *, Tcl_Obj *, bool byReference = false);
 };
 
 template <>
 struct tcl_cast<double>
 {
-     static double from(Tcl_Interp *, Tcl_Obj *);
+     static double from(Tcl_Interp *, Tcl_Obj *, bool byReference = false);
 };
 
 template <>
 struct tcl_cast<std::string>
 {
-     static std::string from(Tcl_Interp *, Tcl_Obj *);
+     static std::string from(Tcl_Interp *, Tcl_Obj *, bool byReference = false);
 };
 
 template <>
 struct tcl_cast<char const *>
 {
-     static char const * from(Tcl_Interp *, Tcl_Obj *);
+     static char const * from(Tcl_Interp *, Tcl_Obj *, bool byReference = false);
 };
 
 template <>
 struct tcl_cast<object>
 {
-     static object from(Tcl_Interp *, Tcl_Obj *);
+     static object from(Tcl_Interp *, Tcl_Obj *, bool byReference = false);
+};
+
+template <>
+struct tcl_cast<objectref>
+{
+    static objectref from(Tcl_Interp *, Tcl_Obj *, bool byReference = true);
 };
