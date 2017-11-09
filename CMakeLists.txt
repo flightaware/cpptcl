@@ -16,7 +16,7 @@ add_compile_options(-DUSE_TCL_STUBS -std=c++11 -stdlib=libc++ -Weverything -Wno-
 
 list(APPEND SRCS cpptcl.cc)
 list(APPEND SRCS cpptcl.h)
-list(APPEND SRCS object.h)
+list(APPEND SRCS cpptcl_object.h)
 list(APPEND SRCS examples/example7.cc)
 list(APPEND SRCS details/callbacks.h)
 list(APPEND SRCS details/callbacks_v.h) 
