@@ -29,18 +29,18 @@ list(APPEND SRCS details/methods_v.h)
 add_library(cpptcl SHARED ${SRCS})
 target_link_libraries(cpptcl ${TCLSTUBLIB})
 
-add_library(cpptcl_module_one SHARED ${SRCS} src/modules/cpptcl_module_one.cc)
-target_link_libraries(cpptcl_module_one ${TCLSTUBLIB})
+add_library(cpptcl_module_one SHARED src/modules/cpptcl_module_one.cc)
+target_link_libraries(cpptcl_module_one cpptcl ${TCLSTUBLIB})
 
-add_library(cpptcl_module_two SHARED ${SRCS} src/modules/cpptcl_module_two.cc)
-target_link_libraries(cpptcl_module_two ${TCLSTUBLIB})
+add_library(cpptcl_module_two SHARED src/modules/cpptcl_module_two.cc)
+target_link_libraries(cpptcl_module_two cpptcl ${TCLSTUBLIB})
 
-add_library(cpptcl_module_three SHARED ${SRCS} src/modules/cpptcl_module_three.cc)
-target_link_libraries(cpptcl_module_three ${TCLSTUBLIB})
+add_library(cpptcl_module_three SHARED src/modules/cpptcl_module_three.cc)
+target_link_libraries(cpptcl_module_three cpptcl ${TCLSTUBLIB})
 
-add_library(cpptcl_module_five SHARED ${SRCS} src/modules/cpptcl_module_five.cc)
-target_link_libraries(cpptcl_module_five ${TCLSTUBLIB})
+add_library(cpptcl_module_five SHARED src/modules/cpptcl_module_five.cc)
+target_link_libraries(cpptcl_module_five cpptcl ${TCLSTUBLIB})
 
-add_library(cpptcl_module_six SHARED ${SRCS} src/modules/cpptcl_module_six.cc)
-target_link_libraries(cpptcl_module_six ${TCLSTUBLIB})
+add_library(cpptcl_module_six SHARED src/modules/cpptcl_module_six.cc)
+target_link_libraries(cpptcl_module_six cpptcl ${TCLSTUBLIB})
 
