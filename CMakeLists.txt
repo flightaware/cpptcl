@@ -12,7 +12,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 include_directories(. details /usr/local/include)
 
-add_compile_options(-DUSE_TCL_STUBS -std=c++11 -stdlib=libc++ -Weverything)
+add_compile_options(-DUSE_TCL_STUBS -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat)
 
 list(APPEND SRCS cpptcl.cc)
 list(APPEND SRCS cpptcl.h)
