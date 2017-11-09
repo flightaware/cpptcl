@@ -298,6 +298,8 @@ extern details::no_init_type no_init;
 // interpreter wrapper
 class interpreter {
   public:
+    static interpreter * defaultInterpreter;
+
 	interpreter();
 	interpreter(Tcl_Interp *, bool owner = true);
 	~interpreter();
@@ -458,7 +460,7 @@ class object {
 
 	// (logically) non-modifying members
 
-	template <typename T> T get(interpreter &i) const;
+    template <typename T> T get(interpreter &i = *interpreter::defaultInterpreter) const;
 
 	char const *get() const;			 // string get
 	char const *get(size_t &size) const; // byte array get
