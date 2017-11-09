@@ -552,7 +552,7 @@ char const *object::get(size_t &size) const {
 	return const_cast<char const *>(reinterpret_cast<char *>(buf));
 }
 
-size_t object::length(interpreter &i) const {
+size_t object::size(interpreter &i) const {
 	int len;
 	int res = Tcl_ListObjLength(i.get(), obj_, &len);
 
@@ -563,7 +563,7 @@ size_t object::length(interpreter &i) const {
 	return static_cast<size_t>(len);
 }
 
-object object::at(interpreter &i, size_t index) const {
+object object::at(size_t index, interpreter &i) const {
 	Tcl_Obj *o;
 	int res = Tcl_ListObjIndex(i.get(), obj_, static_cast<int>(index), &o);
 	if (res != TCL_OK) {
@@ -576,7 +576,7 @@ object object::at(interpreter &i, size_t index) const {
 	return object(o);
 }
 
-object &object::append(interpreter &i, object const &o) {
+object &object::append(object const &o, interpreter &i) {
 	int res = Tcl_ListObjAppendElement(i.get(), obj_, o.obj_);
 	if (res != TCL_OK) {
 		throw tcl_error(i.get());
@@ -585,7 +585,7 @@ object &object::append(interpreter &i, object const &o) {
 	return *this;
 }
 
-object &object::append_list(interpreter &i, object const &o) {
+object &object::append_list(object const &o, interpreter &i) {
 	int res = Tcl_ListObjAppendList(i.get(), obj_, o.obj_);
 	if (res != TCL_OK) {
 		throw tcl_error(i.get());
@@ -594,7 +594,7 @@ object &object::append_list(interpreter &i, object const &o) {
 	return *this;
 }
 
-object &object::replace(interpreter &i, size_t index, size_t count, object const &o) {
+object &object::replace(size_t index, size_t count, object const &o, interpreter &i) {
 	int res = Tcl_ListObjReplace(i.get(), obj_, static_cast<int>(index), static_cast<int>(count), 1, &(o.obj_));
 	if (res != TCL_OK) {
 		throw tcl_error(i.get());
@@ -603,7 +603,7 @@ object &object::replace(interpreter &i, size_t index, size_t count, object const
 	return *this;
 }
 
-object &object::replace_list(interpreter &i, size_t index, size_t count, object const &o) {
+object &object::replace_list(size_t index, size_t count, object const &o, interpreter &i) {
 	int objc;
 	Tcl_Obj **objv;
 

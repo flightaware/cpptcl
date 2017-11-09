@@ -6,15 +6,13 @@ using namespace Tcl;
 
 int sumAll(object const &argv)
 {
-     interpreter i(argv.get_interp(), false);
-
      int sum = 0;
 
-     size_t argc = argv.length(i);
+     size_t argc = argv.size();
      for (size_t indx = 0; indx != argc; ++indx)
      {
-          object o(argv.at(i, indx));
-          sum += o.get<int>(i);
+          object o(argv.at(indx));
+          sum += o.get<int>();
      }
 
      return sum;

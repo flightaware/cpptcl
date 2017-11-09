@@ -395,142 +395,19 @@ class interpreter {
 	bool owner_;
 };
 
-// object wrapper
-class object {
-  public:
-	// constructors
-
-	object();
-
-	explicit object(bool b);
-	object(char const *buf, size_t size); // byte array
-	explicit object(double b);
-	explicit object(int i);
-
-	// list creation
-	// the InputIterator should give object& or Tcl_Obj* when dereferenced
-	template <class InputIterator> object(InputIterator first, InputIterator last) : interp_(0) {
-		std::vector<Tcl_Obj *> v;
-		fill_vector(v, first, last);
-		obj_ = Tcl_NewListObj(static_cast<int>(v.size()), v.empty() ? NULL : &v[0]);
-		Tcl_IncrRefCount(obj_);
-	}
-
-	explicit object(long i);
-	explicit object(char const *s);		   // string construction
-	explicit object(std::string const &s); // string construction
-
-	explicit object(Tcl_Obj *o, bool shared = false);
-
-	object(object const &other, bool shared = false);
-	~object();
-
-	// assignment
-
-	object &assign(bool b);
-	object &resize(size_t size);				  // byte array resize
-	object &assign(char const *buf, size_t size); // byte array assignment
-	object &assign(double d);
-	object &assign(int i);
-
-	// list assignment
-	// the InputIterator should give Tcl_Obj* or object& when dereferenced
-	template <class InputIterator> object &assign(InputIterator first, InputIterator last) {
-		std::vector<Tcl_Obj *> v;
-		fill_vector(v, first, last);
-		Tcl_SetListObj(obj_, static_cast<int>(v.size()), v.empty() ? NULL : &v[0]);
-		return *this;
-	}
-
-	object &assign(long l);
-	object &assign(char const *s);		  // string assignment
-	object &assign(std::string const &s); // string assignment
-	object &assign(object const &o);
-	object &assign(Tcl_Obj *o);
-
-	object &operator=(bool b) { return assign(b); }
-	object &operator=(double d) { return assign(d); }
-	object &operator=(int i) { return assign(i); }
-	object &operator=(long l) { return assign(l); }
-	object &operator=(char const *s) { return assign(s); }
-	object &operator=(std::string const &s) { return assign(s); }
-
-	object &operator=(object const &o) { return assign(o); }
-	object &swap(object &other);
-
-	// (logically) non-modifying members
-
-    template <typename T> T get(interpreter &i = *interpreter::defaultInterpreter) const;
-
-	char const *get() const;			 // string get
-	char const *get(size_t &size) const; // byte array get
-
-	size_t length(interpreter &i) const; // returns list length
-	object at(interpreter &i, size_t index) const;
-
-	Tcl_Obj *get_object() const { return obj_; }
-
-	// modifying members
-
-	object &append(interpreter &i, object const &o);
-	object &append_list(interpreter &i, object const &o);
-
-	// list replace
-	// the InputIterator should give Tcl_Obj* or object& when dereferenced
-	template <class InputIterator> object &replace(interpreter &i, size_t index, size_t count, InputIterator first, InputIterator last) {
-		std::vector<Tcl_Obj *> v;
-		fill_vector(v, first, last);
-		int res = Tcl_ListObjReplace(i.get(), obj_, static_cast<int>(index), static_cast<int>(count), static_cast<int>(v.size()), v.empty() ? NULL : &v[0]);
-		if (res != TCL_OK) {
-			throw tcl_error(i.get());
-		}
-
-		return *this;
-	}
-
-	object &replace(interpreter &i, size_t index, size_t count, object const &o);
-	object &replace_list(interpreter &i, size_t index, size_t count, object const &o);
-
-	// helper functions for piggy-backing interpreter info
-	void set_interp(Tcl_Interp *interp);
-	Tcl_Interp *get_interp() const;
-
-	// helper function, also used from interpreter::eval
-	template <class InputIterator> static void fill_vector(std::vector<Tcl_Obj *> &v, InputIterator first, InputIterator last) {
-		for (; first != last; ++first) {
-			object o(*first, true);
-			v.push_back(o.obj_);
-		}
-	}
-
-  private:
-	// helper function used from copy constructors
-	void init(Tcl_Obj *o, bool shared);
-
-	Tcl_Obj *obj_;
-	Tcl_Interp *interp_;
-};
-
-// available specializations for object::get
-template <> bool object::get<bool>(interpreter &i) const;
-template <> double object::get<double>(interpreter &i) const;
-template <> int object::get<int>(interpreter &i) const;
-template <> long object::get<long>(interpreter &i) const;
-template <> char const *object::get<char const *>(interpreter &i) const;
-template <> std::string object::get<std::string>(interpreter &i) const;
-template <> std::vector<char> object::get<std::vector<char>>(interpreter &i) const;
-
-// the InputIterator should give object& or Tcl_Obj* when dereferenced
-template <class InputIterator> details::result interpreter::eval(InputIterator first, InputIterator last) {
-	std::vector<Tcl_Obj *> v;
-	object::fill_vector(v, first, last);
-	int cc = Tcl_EvalObjv(interp_, static_cast<int>(v.size()), v.empty() ? NULL : &v[0], 0);
-	if (cc != TCL_OK) {
-		throw tcl_error(interp_);
-	}
-
-	return details::result(interp_);
-}
+#include "object.h"
+    
+    // the InputIterator should give object& or Tcl_Obj* when dereferenced
+    template <class InputIterator> details::result interpreter::eval(InputIterator first, InputIterator last) {
+        std::vector<Tcl_Obj *> v;
+        object::fill_vector(v, first, last);
+        int cc = Tcl_EvalObjv(interp_, static_cast<int>(v.size()), v.empty() ? NULL : &v[0], 0);
+        if (cc != TCL_OK) {
+            throw tcl_error(interp_);
+        }
+        
+        return details::result(interp_);
+    }
 
 namespace details {
 
