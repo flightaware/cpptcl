@@ -1,5 +1,3 @@
-// example7.cc
-
 #include "../cpptcl.h"
 
 using namespace Tcl;
@@ -18,7 +16,7 @@ int sumAll(object const &argv)
      return sum;
 }
 
-CPPTCL_MODULE(Cpplib, i)
+CPPTCL_MODULE(Cpptcl_module_five, i)
 {
      i.def("sum", sumAll, variadic());
 }

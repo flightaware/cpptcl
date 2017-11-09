@@ -395,7 +395,7 @@ class interpreter {
 	bool owner_;
 };
 
-#include "object.h"
+#include "cpptcl_object.h"
     
     // the InputIterator should give object& or Tcl_Obj* when dereferenced
     template <class InputIterator> details::result interpreter::eval(InputIterator first, InputIterator last) {

@@ -1,5 +1,3 @@
-// example1.cc
-
 #include "cpptcl.h"
 #include <iostream>
 
@@ -10,7 +8,7 @@ void hello()
      cout << "Hello C++/Tcl!" << endl;
 }
 
-CPPTCL_MODULE(Cpplib, i)
+CPPTCL_MODULE(Cpptcl_module_one, i)
 {
      i.def("hello", hello);
 }

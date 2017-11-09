@@ -1,5 +1,3 @@
-// example5.cc
-
 #include "cpptcl.h"
 #include <string>
 
@@ -30,7 +28,7 @@ void killPerson(Person *p)
      delete p;
 }
 
-CPPTCL_MODULE(Cpplib, i)
+CPPTCL_MODULE(Cpptcl_module_four, i)
 {
      // note that the Person class is exposed without any constructor
      i.class_<Person>("Person", no_init)
