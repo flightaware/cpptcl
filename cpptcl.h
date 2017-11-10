@@ -301,7 +301,7 @@ class interpreter {
   public:
     static interpreter * defaultInterpreter;
 
-	interpreter();
+    interpreter() : interpreter(Tcl_CreateInterp(), true) {}
 	interpreter(Tcl_Interp *, bool owner = true);
 	~interpreter();
 

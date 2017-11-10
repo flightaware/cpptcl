@@ -1,16 +1,24 @@
 cmake_minimum_required(VERSION 2.8)
 
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang++)
+
 project(cpptcl)
 
+find_path(TCL_HEADER NAMES tcl.h) 
 find_library(TCLSTUBLIB NAMES tclstub8.6 HINTS "$ENV{HOME}/git/tcl/build" PATHS "/usr/local/lib")
 
 if(NOT TCLSTUBLIB)
-  message(FATAL_ERROR "tclstub8.6 library not found")
+  # bsd does not use the same name for stubs
+  find_library(TCLSTUBLIB NAMES tclstub86 HINTS "$ENV{HOME}/git/tcl/build" PATHS "/usr/local/lib")
+  if(NOT TCLSTUBLIB)
+    message(FATAL_ERROR "tclstub8.6 library not found")
+  endif()
 endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details /usr/local/include)
+include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details)
 
 add_compile_options(-DUSE_TCL_STUBS -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat)
 

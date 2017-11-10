@@ -626,18 +626,13 @@ Tcl_Interp *object::get_interp() const { return interp_; }
 
 Tcl::interpreter * interpreter::defaultInterpreter = nullptr;
 
-interpreter::interpreter() {
-	interp_ = Tcl_CreateInterp();
-	owner_ = true;
-    if (!defaultInterpreter) {
-        defaultInterpreter = this;
-    }
-}
-
 interpreter::interpreter(Tcl_Interp *interp, bool owner) {
 	interp_ = interp;
 	owner_ = owner;
     if (!defaultInterpreter) {
+        if (Tcl_InitStubs(interp, "8.6", 0) == NULL) {
+            throw tcl_error("Failed to initialize stubs");
+        }
         defaultInterpreter = this;
     }
 }
