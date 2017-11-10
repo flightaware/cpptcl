@@ -48,8 +48,9 @@ public:
           policies const &pol)
      {
           object t2 = get_var_params(interp, objc, objv, var_start, pol);
+         tcl_cast_by_reference<T1> byRef1;
           dispatch<R>::template do_dispatch<T1, T2>(interp, f_,
-               tcl_cast<T1>::from(interp, objv[1]),
+               tcl_cast<T1>::from(interp, objv[1], byRef1.value),
                t2);
      }
 
@@ -72,9 +73,11 @@ public:
           policies const &pol)
      {
           object t3 = get_var_params(interp, objc, objv, var_start, pol);
+         tcl_cast_by_reference<T1> byRef1;
+         tcl_cast_by_reference<T1> byRef2;
           dispatch<R>::template do_dispatch<T1, T2, T3>(interp, f_,
-               tcl_cast<T1>::from(interp, objv[1]),
-               tcl_cast<T2>::from(interp, objv[2]),
+               tcl_cast<T1>::from(interp, objv[1], byRef1.value),
+               tcl_cast<T2>::from(interp, objv[2], byRef2.value),
                t3);
      }
 
@@ -97,10 +100,13 @@ public:
           policies const &pol)
      {
           object t4 = get_var_params(interp, objc, objv, var_start, pol);
+         tcl_cast_by_reference<T1> byRef1;
+         tcl_cast_by_reference<T1> byRef2;
+         tcl_cast_by_reference<T1> byRef3;
           dispatch<R>::template do_dispatch<T1, T2, T3, T4>(interp, f_,
-               tcl_cast<T1>::from(interp, objv[1]),
-               tcl_cast<T2>::from(interp, objv[2]),
-               tcl_cast<T3>::from(interp, objv[3]),
+               tcl_cast<T1>::from(interp, objv[1], byRef1.value),
+               tcl_cast<T2>::from(interp, objv[2], byRef2.value),
+               tcl_cast<T3>::from(interp, objv[3], byRef3.value),
                t4);
      }
 
@@ -123,12 +129,16 @@ public:
           policies const &pol)
      {
           object t5 = get_var_params(interp, objc, objv, var_start, pol);
+         tcl_cast_by_reference<T1> byRef1;
+         tcl_cast_by_reference<T1> byRef2;
+         tcl_cast_by_reference<T1> byRef3;
+         tcl_cast_by_reference<T1> byRef4;
           dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5>(
                interp, f_,
-               tcl_cast<T1>::from(interp, objv[1]),
-               tcl_cast<T2>::from(interp, objv[2]),
-               tcl_cast<T3>::from(interp, objv[3]),
-               tcl_cast<T4>::from(interp, objv[4]),
+               tcl_cast<T1>::from(interp, objv[1], byRef1.value),
+               tcl_cast<T2>::from(interp, objv[2], byRef2.value),
+               tcl_cast<T3>::from(interp, objv[3], byRef3.value),
+               tcl_cast<T4>::from(interp, objv[4], byRef4.value),
                t5);
      }
 
@@ -152,13 +162,18 @@ public:
           policies const &pol)
      {
           object t6 = get_var_params(interp, objc, objv, var_start, pol);
+         tcl_cast_by_reference<T1> byRef1;
+         tcl_cast_by_reference<T1> byRef2;
+         tcl_cast_by_reference<T1> byRef3;
+         tcl_cast_by_reference<T1> byRef4;
+         tcl_cast_by_reference<T1> byRef5;
           dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6>(
                interp, f_,
-               tcl_cast<T1>::from(interp, objv[1]),
-               tcl_cast<T2>::from(interp, objv[2]),
-               tcl_cast<T3>::from(interp, objv[3]),
-               tcl_cast<T4>::from(interp, objv[4]),
-               tcl_cast<T5>::from(interp, objv[5]),
+               tcl_cast<T1>::from(interp, objv[1], byRef1.value),
+               tcl_cast<T2>::from(interp, objv[2], byRef2.value),
+               tcl_cast<T3>::from(interp, objv[3], byRef3.value),
+               tcl_cast<T4>::from(interp, objv[4], byRef4.value),
+               tcl_cast<T5>::from(interp, objv[5], byRef5.value),
                t6);
      }
 
@@ -183,14 +198,20 @@ public:
           policies const &pol)
      {
           object t7 = get_var_params(interp, objc, objv, var_start, pol);
+         tcl_cast_by_reference<T1> byRef1;
+         tcl_cast_by_reference<T1> byRef2;
+         tcl_cast_by_reference<T1> byRef3;
+         tcl_cast_by_reference<T1> byRef4;
+         tcl_cast_by_reference<T1> byRef5;
+         tcl_cast_by_reference<T1> byRef6;
           dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7>(
                interp, f_,
-               tcl_cast<T1>::from(interp, objv[1]),
-               tcl_cast<T2>::from(interp, objv[2]),
-               tcl_cast<T3>::from(interp, objv[3]),
-               tcl_cast<T4>::from(interp, objv[4]),
-               tcl_cast<T5>::from(interp, objv[5]),
-               tcl_cast<T6>::from(interp, objv[6]),
+               tcl_cast<T1>::from(interp, objv[1], byRef1.value),
+               tcl_cast<T2>::from(interp, objv[2], byRef2.value),
+               tcl_cast<T3>::from(interp, objv[3], byRef3.value),
+               tcl_cast<T4>::from(interp, objv[4], byRef4.value),
+               tcl_cast<T5>::from(interp, objv[5], byRef5.value),
+               tcl_cast<T6>::from(interp, objv[6], byRef6.value),
                t7);
      }
 
@@ -215,15 +236,22 @@ public:
           policies const &pol)
      {
           object t8 = get_var_params(interp, objc, objv, var_start, pol);
+         tcl_cast_by_reference<T1> byRef1;
+         tcl_cast_by_reference<T1> byRef2;
+         tcl_cast_by_reference<T1> byRef3;
+         tcl_cast_by_reference<T1> byRef4;
+         tcl_cast_by_reference<T1> byRef5;
+         tcl_cast_by_reference<T1> byRef6;
+         tcl_cast_by_reference<T1> byRef7;
           dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8>(
                interp, f_,
-               tcl_cast<T1>::from(interp, objv[1]),
-               tcl_cast<T2>::from(interp, objv[2]),
-               tcl_cast<T3>::from(interp, objv[3]),
-               tcl_cast<T4>::from(interp, objv[4]),
-               tcl_cast<T5>::from(interp, objv[5]),
-               tcl_cast<T6>::from(interp, objv[6]),
-               tcl_cast<T7>::from(interp, objv[7]),
+               tcl_cast<T1>::from(interp, objv[1], byRef1.value),
+               tcl_cast<T2>::from(interp, objv[2], byRef2.value),
+               tcl_cast<T3>::from(interp, objv[3], byRef3.value),
+               tcl_cast<T4>::from(interp, objv[4], byRef4.value),
+               tcl_cast<T5>::from(interp, objv[5], byRef5.value),
+               tcl_cast<T6>::from(interp, objv[6], byRef6.value),
+               tcl_cast<T7>::from(interp, objv[7], byRef7.value),
                t8);
      }
 
@@ -248,17 +276,25 @@ public:
           policies const &pol)
      {
           object t9 = get_var_params(interp, objc, objv, var_start, pol);
+         tcl_cast_by_reference<T1> byRef1;
+         tcl_cast_by_reference<T1> byRef2;
+         tcl_cast_by_reference<T1> byRef3;
+         tcl_cast_by_reference<T1> byRef4;
+         tcl_cast_by_reference<T1> byRef5;
+         tcl_cast_by_reference<T1> byRef6;
+         tcl_cast_by_reference<T1> byRef7;
+         tcl_cast_by_reference<T1> byRef8;
           dispatch<R>::template do_dispatch<
                T1, T2, T3, T4, T5, T6, T7, T8, T9>(
                interp, f_,
-               tcl_cast<T1>::from(interp, objv[1]),
-               tcl_cast<T2>::from(interp, objv[2]),
-               tcl_cast<T3>::from(interp, objv[3]),
-               tcl_cast<T4>::from(interp, objv[4]),
-               tcl_cast<T5>::from(interp, objv[5]),
-               tcl_cast<T6>::from(interp, objv[6]),
-               tcl_cast<T7>::from(interp, objv[7]),
-               tcl_cast<T8>::from(interp, objv[8]),
+               tcl_cast<T1>::from(interp, objv[1], byRef1.value),
+               tcl_cast<T2>::from(interp, objv[2], byRef2.value),
+               tcl_cast<T3>::from(interp, objv[3], byRef3.value),
+               tcl_cast<T4>::from(interp, objv[4], byRef4.value),
+               tcl_cast<T5>::from(interp, objv[5], byRef5.value),
+               tcl_cast<T6>::from(interp, objv[6], byRef6.value),
+               tcl_cast<T7>::from(interp, objv[7], byRef7.value),
+               tcl_cast<T8>::from(interp, objv[8], byRef8.value),
                t9);
      }
 
