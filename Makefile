@@ -3,6 +3,12 @@ all:
 	mkdir build
 	(cd build; cmake ..; make)
 
+clean:
+	rm -rf build build_xcode
+
+test:	all
+	tclsh tests/cpptcl_module_one.tcl 
+
 xcode:
 	rm -rf build_xcode
 	mkdir build_xcode
