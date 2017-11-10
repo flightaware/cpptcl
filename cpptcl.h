@@ -15,8 +15,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <tcl.h>
 #include <vector>
+#include "tcl.h"
 
 namespace Tcl {
 

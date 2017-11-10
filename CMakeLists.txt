@@ -5,7 +5,9 @@ set(CMAKE_CXX_COMPILER clang++)
 
 project(cpptcl)
 
-find_path(TCL_HEADER NAMES tcl.h) 
+# Technically you should set TCL_INCLUDE_SPEC from tclConfig.sh
+find_path(TCL_INCLUDE NAMES tcl.h PATHS /usr/local/include /usr/include ENV TCL_INCLUDE_SPEC) 
+
 find_library(TCLSTUBLIB NAMES tclstub8.6 HINTS "$ENV{HOME}/git/tcl/build" PATHS "/usr/local/lib")
 
 if(NOT TCLSTUBLIB)
@@ -18,9 +20,9 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details)
+include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details ${TCL_INCLUDE})
 
-add_compile_options(-DUSE_TCL_STUBS -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat)
+add_compile_options(-DUSE_TCL_STUBS -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat -Wno-padded)
 
 list(APPEND SRCS cpptcl.cc)
 list(APPEND SRCS cpptcl.h)
