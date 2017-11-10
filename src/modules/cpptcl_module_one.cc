@@ -16,8 +16,25 @@ void helloVar(objectref const &first, objectref const &last)
         << last.get().get() << endl;
 }
 
+void helloArray(object const &name)
+{
+    cout << "Hello C++/Tcl! from array "
+    << name["first"].get() << " "
+    << name["last"].get() << endl;
+}
+
+void helloArray2(object const &name, object const &address)
+{
+    cout << "Hello C++/Tcl! from array "
+    << name["first"].get() << " "
+    << name["last"].get() << endl;
+    cout << address["city"].get() << " " << address["state"].get() << endl;
+}
+
 CPPTCL_MODULE(Cpptcl_module_one, i)
 {
     i.def("hello", hello);
     i.def("helloVar", helloVar);
+    i.def("helloArray", helloArray);
+    i.def("helloArray2", helloArray2);
 }
