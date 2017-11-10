@@ -9,19 +9,22 @@ if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
   set(CMAKE_CXX_STANDARD_LIBRARIES "-lc++ /usr/lib/x86_64-linux-gnu/libc++abi.so.1.0")
 endif()
 
+set(TCLSTUBNAME "tclstub8.6")
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "FreeBSD") 
+  set(TCLSTUBNAME "tclstub86")
+endif()
+
 project(cpptcl)
 
+#
 # Technically you should set TCL_INCLUDE_SPEC from tclConfig.sh
+#
 find_path(TCL_INCLUDE NAMES tcl.h PATHS /usr/local/include /usr/include ENV TCL_INCLUDE_SPEC) 
 
-find_library(TCLSTUBLIB NAMES tclstub8.6 HINTS "$ENV{HOME}/git/tcl/build" PATHS "/usr/local/lib")
+find_library(TCLSTUBLIB NAMES ${TCLSTUBNAME} PATHS "/usr/local/lib" ENV TCL_BUILD_STUB_LIB_PATH)
 
 if(NOT TCLSTUBLIB)
-  # bsd does not use the same name for stubs
-  find_library(TCLSTUBLIB NAMES tclstub86 HINTS "$ENV{HOME}/git/tcl/build" PATHS "/usr/local/lib")
-  if(NOT TCLSTUBLIB)
-    message(FATAL_ERROR "tclstub8.6 library not found")
-  endif()
+  message(FATAL_ERROR "tclstub8.6 library not found")
 endif()
 
 set(CMAKE_BUILD_TYPE Debug)
