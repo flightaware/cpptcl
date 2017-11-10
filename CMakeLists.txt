@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_C_COMPILER clang)
 set(CMAKE_CXX_COMPILER clang++)
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux") 
+	message(INFO "Linux link patching")
+  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_STANDARD_LIBRARIES "-lc++ /usr/lib/x86_64-linux-gnu/libc++abi.so.1.0")
+endif()
 
 project(cpptcl)
 
