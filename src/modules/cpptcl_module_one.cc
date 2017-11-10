@@ -4,6 +4,11 @@
 using namespace std;
 using namespace Tcl;
 
+void hello();
+void helloVar(objectref const &first, objectref const &last);
+void helloArray(object const &name);
+void helloArray2(object const &name, object const &address);
+
 void hello()
 {
      cout << "Hello C++/Tcl!" << endl;
