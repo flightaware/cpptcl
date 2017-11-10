@@ -115,11 +115,19 @@ public:
             v.push_back(o.obj_);
         }
     }
+
+    const object operator[](std::string idx) const {
+        Tcl_Obj *array = obj_;
+        Tcl_Obj *key = Tcl_NewStringObj(idx.c_str(), idx.size());
+        Tcl_Obj *o = Tcl_ObjGetVar2(interp_, array, key, 0);
+        return object(o);
+    }
     
 private:
     // helper function used from copy constructors
     void init(Tcl_Obj *o, bool shared);
-    
+
+public:
     Tcl_Obj *obj_;
     Tcl_Interp *interp_;
 };
@@ -135,13 +143,13 @@ template <> std::vector<char> object::get<std::vector<char>>(interpreter &i) con
 
 class objectref {
 public:
-    objectref(Tcl_Obj *obj) : object(obj) {}
+    objectref(Tcl_Obj *obj) : objtarget(object(obj, true)) {}
     void set_interp(Tcl_Interp *interp) { this->interp = interp; }
     Tcl_Interp *get_interp() const { return interp; }
-    object const& get() const { return object; }
+    object const& get() const { return objtarget; }
     
 private:
-    object object;
+    object objtarget;
     Tcl_Interp *interp;
 };
 
