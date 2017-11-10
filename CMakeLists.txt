@@ -21,7 +21,7 @@ project(cpptcl)
 #
 find_path(TCL_INCLUDE NAMES tcl.h PATHS /usr/local/include /usr/include ENV TCL_INCLUDE_SPEC) 
 
-find_library(TCLSTUBLIB NAMES ${TCLSTUBNAME} PATHS "/usr/local/lib" ENV TCL_BUILD_STUB_LIB_PATH)
+find_library(TCLSTUBLIB NAMES ${TCLSTUBNAME} HINTS "$ENV{HOME}/git/tcl/build" PATHS "/usr/local/lib" ENV TCL_BUILD_STUB_LIB_PATH)
 
 if(NOT TCLSTUBLIB)
   message(FATAL_ERROR "tclstub8.6 library not found")
