@@ -118,7 +118,10 @@ public:
 
     const object operator[](std::string idx) const {
         Tcl_Obj *array = obj_;
-        Tcl_Obj *o = Tcl_GetVar2Ex(interp_, Tcl_GetString(array), idx.c_str(), 0);
+        Tcl_Obj *o = Tcl_GetVar2Ex(interp_, Tcl_GetString(array), idx.c_str(), TCL_LEAVE_ERR_MSG);
+        if (o == 0) {
+            throw tcl_error(this->get_interp());
+        }
         return object(o);
     }
     
