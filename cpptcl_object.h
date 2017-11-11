@@ -125,6 +125,12 @@ public:
         return object(o);
     }
     
+    const bool exists(std::string idx) const {
+        Tcl_Obj *array = obj_;
+        Tcl_Obj *o = Tcl_GetVar2Ex(interp_, Tcl_GetString(array), idx.c_str(), 0);
+		return (o != 0);
+    }
+    
 private:
     // helper function used from copy constructors
     void init(Tcl_Obj *o, bool shared);

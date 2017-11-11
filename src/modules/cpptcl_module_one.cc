@@ -33,6 +33,7 @@ void helloArray2(object const &name, object const &address)
     cout << "Hello C++/Tcl! from array "
     << name["first"].get() << " "
     << name["last"].get() << endl;
+	cout << "city exists " << address.exists("city") << endl;
     cout << address["city"].get() << " " << address["state"].get() << endl;
 }
 
