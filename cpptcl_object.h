@@ -118,8 +118,7 @@ public:
 
     const object operator[](std::string idx) const {
         Tcl_Obj *array = obj_;
-        Tcl_Obj *key = Tcl_NewStringObj(idx.c_str(), idx.size());
-        Tcl_Obj *o = Tcl_ObjGetVar2(interp_, array, key, 0);
+        Tcl_Obj *o = Tcl_GetVar2Ex(interp_, Tcl_GetString(array), idx.c_str(), 0);
         return object(o);
     }
     
