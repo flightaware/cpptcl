@@ -10,13 +10,14 @@
 #ifndef CPPTCL_INCLUDED
 #define CPPTCL_INCLUDED
 
-#include "tcl.h"
 #include <functional>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "tcl.h"
 
 namespace Tcl {
 
