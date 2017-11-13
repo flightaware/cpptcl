@@ -11,37 +11,20 @@
 #include <iostream>
 #include <string>
 
+void fun0() { std::cout << "fun0\n"; }
 
-void fun0()
-{
-     std::cout << "fun0\n";
-}
+int fun1() { return 7; }
 
-int fun1()
-{
-     return 7;
-}
+std::string fun2() { return "Ala ma kota"; }
 
-std::string fun2()
-{
-     return "Ala ma kota";
-}
+int add(int a, int b) { return a + b; }
 
-int add(int a, int b)
-{
-     return a + b;
-}
+int mystrlen(std::string const &s) { return s.size(); }
 
-int mystrlen(std::string const &s)
-{
-     return s.size();
-}
-
-CPPTCL_MODULE(Test, i)
-{
-     i.def("fun0", fun0);
-     i.def("fun1", fun1);
-     i.def("fun2", fun2);
-     i.def("add", add);
-     i.def("mystrlen", mystrlen);
+CPPTCL_MODULE(Test, i) {
+	i.def("fun0", fun0);
+	i.def("fun1", fun1);
+	i.def("fun2", fun2);
+	i.def("add", add);
+	i.def("mystrlen", mystrlen);
 }

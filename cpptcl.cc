@@ -8,9 +8,9 @@
 //
 
 #include "cpptcl.h"
-#include <memory>
 #include <iterator>
 #include <map>
+#include <memory>
 #include <sstream>
 
 using namespace Tcl;
@@ -120,7 +120,7 @@ namespace // anonymous
 {
 
 // map of polymorphic callbacks
-typedef map<string, shared_ptr<callback_base> > callback_interp_map;
+typedef map<string, shared_ptr<callback_base>> callback_interp_map;
 typedef map<Tcl_Interp *, callback_interp_map> callback_map;
 
 callback_map callbacks;
@@ -133,7 +133,7 @@ typedef map<Tcl_Interp *, policies_interp_map> policies_map;
 policies_map call_policies;
 
 // map of object handlers
-typedef map<string, shared_ptr<class_handler_base> > class_interp_map;
+typedef map<string, shared_ptr<class_handler_base>> class_interp_map;
 typedef map<Tcl_Interp *, class_interp_map> class_handlers_map;
 
 class_handlers_map class_handlers;
@@ -334,7 +334,7 @@ extern "C" int constructor_handler(ClientData cd, Tcl_Interp *interp, int objc, 
 	return TCL_OK;
 }
 
-} // namespace anonymous
+} // namespace
 
 Tcl::details::no_init_type Tcl::no_init;
 
@@ -499,7 +499,7 @@ template <> bool object::get<bool>(interpreter &i) const {
 	return static_cast<bool>(retVal);
 }
 
-template <> vector<char> object::get<vector<char> >(interpreter &) const {
+template <> vector<char> object::get<vector<char>>(interpreter &) const {
 	size_t size;
 	char const *buf = get(size);
 	return vector<char>(buf, buf + size);
@@ -625,25 +625,23 @@ void object::set_interp(Tcl_Interp *interp) { interp_ = interp; }
 
 Tcl_Interp *object::get_interp() const { return interp_; }
 
-Tcl::interpreter * interpreter::defaultInterpreter = nullptr;
+Tcl::interpreter *interpreter::defaultInterpreter = nullptr;
 
-interpreter::interpreter() : interpreter(Tcl_CreateInterp(), true) {
-    throw tcl_error("expecting a single interpreter");
-}
+interpreter::interpreter() : interpreter(Tcl_CreateInterp(), true) { throw tcl_error("expecting a single interpreter"); }
 
 interpreter::interpreter(Tcl_Interp *interp, bool owner) {
 	interp_ = interp;
 	owner_ = owner;
-    if (!defaultInterpreter) {
-        if (Tcl_InitStubs(interp, "8.6", 0) == NULL) {
-            throw tcl_error("Failed to initialize stubs");
-        }
-        // Make a copy
-        defaultInterpreter = new interpreter(*this);
-    }
+	if (!defaultInterpreter) {
+		if (Tcl_InitStubs(interp, "8.6", 0) == NULL) {
+			throw tcl_error("Failed to initialize stubs");
+		}
+		// Make a copy
+		defaultInterpreter = new interpreter(*this);
+	}
 }
 
-interpreter::interpreter(const interpreter& i): interp_(i.interp_), owner_(i.owner_) {}
+interpreter::interpreter(const interpreter &i) : interp_(i.interp_), owner_(i.owner_) {}
 
 interpreter::~interpreter() {
 	if (owner_) {
@@ -801,9 +799,7 @@ double tcl_cast<double>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	return res;
 }
 
-string tcl_cast<string>::from(Tcl_Interp *, Tcl_Obj *obj, bool) {
-    return Tcl_GetString(obj);
-}
+string tcl_cast<string>::from(Tcl_Interp *, Tcl_Obj *obj, bool) { return Tcl_GetString(obj); }
 
 char const *tcl_cast<char const *>::from(Tcl_Interp *, Tcl_Obj *obj, bool) { return Tcl_GetString(obj); }
 
@@ -815,11 +811,11 @@ object tcl_cast<object>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 }
 
 objectref tcl_cast<objectref>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool byReference) {
-    // TODO implement by reference
-    if (byReference) {
-        obj = Tcl_ObjGetVar2(interp, obj, NULL, 0);
-    }
-    objectref o(obj);
-    o.set_interp(interp);
-    return o;
+	// TODO implement by reference
+	if (byReference) {
+		obj = Tcl_ObjGetVar2(interp, obj, NULL, 0);
+	}
+	objectref o(obj);
+	o.set_interp(interp);
+	return o;
 }
