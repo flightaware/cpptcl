@@ -10,7 +10,7 @@ test:	all
 	tclsh tests/cpptcl_module_one.tcl 
 
 format:
-	find . -name \*.h -o -name \*.cc | xargs clang-format -style=file  -i
+	find . -name \*.h -o -name \*.cc | xargs clang-format-4.0 -style=file  -i
 
 xcode:
 	rm -rf build_xcode
