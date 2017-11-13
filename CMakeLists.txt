@@ -1,13 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_COMPILER clang++)
-
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux") 
-    # on Linux these appear necessary to get libc++ to link
-    set(CMAKE_CXX_STANDARD_LIBRARIES "-lc++abi -lc++")
+if (NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux") 
+    set(CMAKE_CXX_COMPILER clang++)
 endif()
 
 project(cpptcl)
@@ -24,10 +18,15 @@ include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details ${TCL_INCLUD
 
 list(APPEND OPTS -DUSE_TCL_STUBS)
 
-list(APPEND OPTS -stdlib=libc++)
-list(APPEND OPTS -Wno-reserved-id-macro)
-list(APPEND OPTS -Wno-padded)
-list(APPEND OPTS -Wno-c++98-compat)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+    list(APPEND OPTS -stdlib=libc++)
+    list(APPEND OPTS -Wno-reserved-id-macro)
+    list(APPEND OPTS -Wno-padded)
+    list(APPEND OPTS -Wno-c++98-compat)
+endif()
 
 add_compile_options(${OPTS})
 
