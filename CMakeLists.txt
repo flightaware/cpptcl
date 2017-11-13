@@ -1,40 +1,35 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_COMPILER clang++)
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux") 
-  message(INFO "Linux link patching")
-  set(CMAKE_CXX_STANDARD 14)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-  set(CMAKE_CXX_STANDARD_LIBRARIES "-lc++ /usr/lib/x86_64-linux-gnu/libc++abi.so.1.0")
-endif()
 
-set(TCLSTUBNAME "tclstub8.6")
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "FreeBSD") 
-  set(TCLSTUBNAME "tclstub86")
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux") 
+    # on Linux these appear necessary to get libc++ to link
+    set(CMAKE_CXX_STANDARD_LIBRARIES "-lc++abi -lc++")
 endif()
 
 project(cpptcl)
 
-#
-# Technically you should set TCL_INCLUDE_SPEC from tclConfig.sh
-#
-find_path(TCL_INCLUDE NAMES tcl.h PATHS /usr/local/include /usr/include ENV TCL_INCLUDE_SPEC) 
+include(FindTclStub)
 
-find_library(TCLSTUBLIB NAMES ${TCLSTUBNAME} HINTS "$ENV{HOME}/git/tcl/build" PATHS "/usr/local/lib" ENV TCL_BUILD_STUB_LIB_PATH)
-
-if(NOT TCLSTUBLIB)
-  message(FATAL_ERROR "tclstub8.6 library not found")
+if(NOT TCL_FOUND)
+  message(FATAL_ERROR "Tcl installation not found")
 endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details ${TCL_INCLUDE})
+include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details ${TCL_INCLUDE_PATH})
 
-list(APPEND NOWARN -Wno-reserved-id-macro)
-list(APPEND NOWARN -Wno-padded)
-list(APPEND NOWARN -Wno-c++98-compat)
-add_compile_options(-DUSE_TCL_STUBS -std=c++11 -stdlib=libc++ ${NOWARN})
+list(APPEND OPTS -DUSE_TCL_STUBS)
+
+list(APPEND OPTS -stdlib=libc++)
+list(APPEND OPTS -Wno-reserved-id-macro)
+list(APPEND OPTS -Wno-padded)
+list(APPEND OPTS -Wno-c++98-compat)
+
+add_compile_options(${OPTS})
 
 list(APPEND SRCS cpptcl.cc)
 list(APPEND SRCS cpptcl.h)
@@ -49,20 +44,20 @@ list(APPEND SRCS details/methods.h)
 list(APPEND SRCS details/methods_v.h)
 
 add_library(cpptcl SHARED ${SRCS})
-target_link_libraries(cpptcl ${TCLSTUBLIB})
+target_link_libraries(cpptcl ${TCL_STUB_LIBRARY})
 
 add_library(cpptcl_module_one SHARED src/modules/cpptcl_module_one.cc)
-target_link_libraries(cpptcl_module_one cpptcl ${TCLSTUBLIB})
+target_link_libraries(cpptcl_module_one cpptcl)
 
 add_library(cpptcl_module_two SHARED src/modules/cpptcl_module_two.cc)
-target_link_libraries(cpptcl_module_two cpptcl ${TCLSTUBLIB})
+target_link_libraries(cpptcl_module_two cpptcl)
 
 add_library(cpptcl_module_three SHARED src/modules/cpptcl_module_three.cc)
-target_link_libraries(cpptcl_module_three cpptcl ${TCLSTUBLIB})
+target_link_libraries(cpptcl_module_three cpptcl)
 
 add_library(cpptcl_module_five SHARED src/modules/cpptcl_module_five.cc)
-target_link_libraries(cpptcl_module_five cpptcl ${TCLSTUBLIB})
+target_link_libraries(cpptcl_module_five cpptcl)
 
 add_library(cpptcl_module_six SHARED src/modules/cpptcl_module_six.cc)
-target_link_libraries(cpptcl_module_six cpptcl ${TCLSTUBLIB})
+target_link_libraries(cpptcl_module_six cpptcl)
 
