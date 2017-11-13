@@ -8,6 +8,7 @@
 //
 
 #include "cpptcl.h"
+#include <memory>
 #include <iterator>
 #include <map>
 #include <sstream>
@@ -119,7 +120,7 @@ namespace // anonymous
 {
 
 // map of polymorphic callbacks
-typedef map<string, shared_ptr<callback_base>> callback_interp_map;
+typedef map<string, shared_ptr<callback_base> > callback_interp_map;
 typedef map<Tcl_Interp *, callback_interp_map> callback_map;
 
 callback_map callbacks;
@@ -132,7 +133,7 @@ typedef map<Tcl_Interp *, policies_interp_map> policies_map;
 policies_map call_policies;
 
 // map of object handlers
-typedef map<string, shared_ptr<class_handler_base>> class_interp_map;
+typedef map<string, shared_ptr<class_handler_base> > class_interp_map;
 typedef map<Tcl_Interp *, class_interp_map> class_handlers_map;
 
 class_handlers_map class_handlers;
@@ -498,7 +499,7 @@ template <> bool object::get<bool>(interpreter &i) const {
 	return static_cast<bool>(retVal);
 }
 
-template <> vector<char> object::get<vector<char>>(interpreter &) const {
+template <> vector<char> object::get<vector<char> >(interpreter &) const {
 	size_t size;
 	char const *buf = get(size);
 	return vector<char>(buf, buf + size);
@@ -626,6 +627,10 @@ Tcl_Interp *object::get_interp() const { return interp_; }
 
 Tcl::interpreter * interpreter::defaultInterpreter = nullptr;
 
+interpreter::interpreter() : interpreter(Tcl_CreateInterp(), true) {
+    throw tcl_error("expecting a single interpreter");
+}
+
 interpreter::interpreter(Tcl_Interp *interp, bool owner) {
 	interp_ = interp;
 	owner_ = owner;
@@ -633,9 +638,12 @@ interpreter::interpreter(Tcl_Interp *interp, bool owner) {
         if (Tcl_InitStubs(interp, "8.6", 0) == NULL) {
             throw tcl_error("Failed to initialize stubs");
         }
-        defaultInterpreter = this;
+        // Make a copy
+        defaultInterpreter = new interpreter(*this);
     }
 }
+
+interpreter::interpreter(const interpreter& i): interp_(i.interp_), owner_(i.owner_) {}
 
 interpreter::~interpreter() {
 	if (owner_) {

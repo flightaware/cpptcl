@@ -125,7 +125,7 @@ class class_handler_base : public object_cmd_base {
 	policies &get_policies(std::string const &name);
 
   protected:
-	typedef std::map<std::string, std::shared_ptr<object_cmd_base>> method_map_type;
+	typedef std::map<std::string, std::shared_ptr<object_cmd_base> > method_map_type;
 
 	// a map of methods for the given class
 	method_map_type methods_;
@@ -179,7 +179,7 @@ template <class C> class class_handler : public class_handler_base {
 
 template <class C> class class_definer {
   public:
-	class_definer(std::shared_ptr<class_handler<C>> ch) : ch_(ch) {}
+	class_definer(std::shared_ptr<class_handler<C> > ch) : ch_(ch) {}
 
 	template <typename R> class_definer &def(std::string const &name, R (C::*f)(), policies const &p = policies()) {
 		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method0<C, R>(f)), p);
@@ -282,7 +282,7 @@ template <class C> class class_definer {
 	}
 
   private:
-	std::shared_ptr<class_handler<C>> ch_;
+	std::shared_ptr<class_handler<C> > ch_;
 };
 
 } // namespace details
@@ -301,7 +301,18 @@ class interpreter {
   public:
     static interpreter * defaultInterpreter;
 
-    interpreter() : interpreter(Tcl_CreateInterp(), true) {}
+    static interpreter* getDefault() {
+        if (defaultInterpreter == NULL) {
+            throw tcl_error("No default interpreter available");
+        }
+        return defaultInterpreter;
+    }
+
+private:
+    interpreter();
+    interpreter(const interpreter& i);
+
+public:
 	interpreter(Tcl_Interp *, bool owner = true);
 	~interpreter();
 
@@ -334,7 +345,7 @@ class interpreter {
 	// class definitions
 
 	template <class C> details::class_definer<C> class_(std::string const &name) {
-		std::shared_ptr<details::class_handler<C>> ch(new details::class_handler<C>());
+		std::shared_ptr<details::class_handler<C> > ch(new details::class_handler<C>());
 
 		add_class(name, ch);
 
@@ -346,7 +357,7 @@ class interpreter {
 	template <class C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9> details::class_definer<C> class_(std::string const &name, init<T1, T2, T3, T4, T5, T6, T7, T8, T9> const &, policies const &p = policies()) {
 		typedef typename details::get_callback_type_for_construct<C, T1, T2, T3, T4, T5, T6, T7, T8, T9>::type callback_type;
 
-		std::shared_ptr<details::class_handler<C>> ch(new details::class_handler<C>());
+		std::shared_ptr<details::class_handler<C> > ch(new details::class_handler<C>());
 
 		add_class(name, ch);
 
@@ -356,7 +367,7 @@ class interpreter {
 	}
 
 	template <class C> details::class_definer<C> class_(std::string const &name, details::no_init_type const &) {
-		std::shared_ptr<details::class_handler<C>> ch(new details::class_handler<C>());
+		std::shared_ptr<details::class_handler<C> > ch(new details::class_handler<C>());
 
 		add_class(name, ch);
 
@@ -382,8 +393,6 @@ class interpreter {
 	static void clear_definitions(Tcl_Interp *);
 
   private:
-	// copy not supported
-	interpreter(const interpreter &);
 	void operator=(const interpreter &);
 
 	void add_function(std::string const &name, std::shared_ptr<details::callback_base> cb, policies const &p = policies());
@@ -419,6 +428,37 @@ namespace details {
 #include "details/methods_v.h"
 
 } // namespace details
+
+    template <typename R, typename T1, typename T2 = void>
+    struct Bind {
+    private:
+        object cmd_;
+    public:
+        Bind(std::string cmd) : cmd_(object(cmd)) {};
+
+        R operator()(const T1 &t1, const T2 &t2) {
+            object obj(cmd_);
+            object e(t1);
+            e.append(object(t2));
+            obj.append_list(e);
+            return (R)(interpreter::getDefault()->eval(obj));
+        }
+    };
+
+    template <typename R, typename T1>
+    struct Bind<R, T1, void> {
+    private:
+        object cmd_;
+    public:
+        Bind(std::string cmd) : cmd_(object(cmd)) {};
+
+        R operator()(const T1 &t) {
+            object obj(cmd_);
+            object e(t);
+            obj.append_list(e);
+            return (R)(interpreter::getDefault()->eval(obj));
+        }
+    };
 
 } // namespace Tcl
 

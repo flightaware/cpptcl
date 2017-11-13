@@ -147,7 +147,7 @@ template <> int object::get<int>(interpreter &i) const;
 template <> long object::get<long>(interpreter &i) const;
 template <> char const *object::get<char const *>(interpreter &i) const;
 template <> std::string object::get<std::string>(interpreter &i) const;
-template <> std::vector<char> object::get<std::vector<char>>(interpreter &i) const;
+template <> std::vector<char> object::get<std::vector<char> >(interpreter &i) const;
 
 class objectref {
 public:
