@@ -429,36 +429,7 @@ namespace details {
 
 } // namespace details
 
-template <typename R, typename T1, typename T2 = void> struct Bind {
-  private:
-	object cmd_;
-
-  public:
-	Bind(std::string cmd) : cmd_(object(cmd)){};
-
-	R operator()(const T1 &t1, const T2 &t2) {
-		object obj(cmd_);
-		object e(t1);
-		e.append(object(t2));
-		obj.append_list(e);
-		return (R)(interpreter::getDefault()->eval(obj));
-	}
-};
-
-template <typename R, typename T1> struct Bind<R, T1, void> {
-  private:
-	object cmd_;
-
-  public:
-	Bind(std::string cmd) : cmd_(object(cmd)){};
-
-	R operator()(const T1 &t) {
-		object obj(cmd_);
-		object e(t);
-		obj.append_list(e);
-		return (R)(interpreter::getDefault()->eval(obj));
-	}
-};
+#include "details/bind.h"
 
 } // namespace Tcl
 
