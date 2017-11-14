@@ -6,7 +6,7 @@ using namespace std;
 using namespace Tcl;
 
 void hello();
-void helloVar(objectref const &first, objectref const &last);
+void helloVar(upvar const &first, upvar const &last);
 void helloArray(object const &name);
 void helloArray2(object const &name, object const &address);
 
@@ -20,7 +20,7 @@ void helloProc() {
 	cout << "pow(2,5) == " << v << " pow(5,2) = " << pow(5, 2) << " expr {1} = " << expr(1) << endl;
 }
 
-void helloVar(objectref const &first, objectref const &last) { cout << "Hello C++/Tcl! " << first.get().get() << " " << last.get().get() << endl; }
+void helloVar(upvar const &first, upvar const &last) { cout << "Hello C++/Tcl! " << first.get().get() << " " << last.get().get() << endl; }
 
 void helloArray(object const &name) { cout << "Hello C++/Tcl! from array " << name["first"].get() << " " << name["last"].get() << endl; }
 

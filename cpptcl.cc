@@ -811,12 +811,11 @@ object tcl_cast<object>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	return o;
 }
 
-objectref tcl_cast<objectref>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool byReference) {
-	// TODO implement by reference
+upvar tcl_cast<upvar>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool byReference) {
 	if (byReference) {
 		obj = Tcl_ObjGetVar2(interp, obj, NULL, 0);
 	}
-	objectref o(obj);
+	upvar o(obj);
 	o.set_interp(interp);
 	return o;
 }

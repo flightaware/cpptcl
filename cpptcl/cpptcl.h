@@ -63,7 +63,7 @@ policies variadic();
 
 class interpreter;
 class object;
-class objectref;
+class upvar;
 
 namespace details {
 
