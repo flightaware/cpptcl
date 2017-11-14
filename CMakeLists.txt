@@ -6,10 +6,11 @@ endif()
 
 project(cpptcl)
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_STANDARD 11)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(CMAKE_CXX_EXTENSIONS OFF)
     list(APPEND OPTS -stdlib=libc++)
     list(APPEND OPTS -Wno-reserved-id-macro)
     list(APPEND OPTS -Wno-padded)
