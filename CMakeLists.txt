@@ -6,18 +6,6 @@ endif()
 
 project(cpptcl)
 
-include(FindTclStub)
-
-if(NOT TCL_FOUND)
-  message(FATAL_ERROR "Tcl installation not found")
-endif()
-
-set(CMAKE_BUILD_TYPE Debug)
-
-include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details ${TCL_INCLUDE_PATH})
-
-list(APPEND OPTS -DUSE_TCL_STUBS)
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,6 +15,16 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     list(APPEND OPTS -Wno-padded)
     list(APPEND OPTS -Wno-c++98-compat)
 endif()
+
+include(FindTclStub)
+
+if(NOT TCL_FOUND)
+  message(FATAL_ERROR "Tcl installation not found")
+endif()
+
+set(CMAKE_BUILD_TYPE Debug)
+
+include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details ${TCL_INCLUDE_PATH})
 
 add_compile_options(${OPTS})
 

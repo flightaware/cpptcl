@@ -136,7 +136,7 @@ class class_handler_base : public object_cmd_base {
 	policies &get_policies(std::string const &name);
 
   protected:
-	typedef std::map<std::string, std::shared_ptr<object_cmd_base>> method_map_type;
+	typedef std::map<std::string, std::shared_ptr<object_cmd_base> > method_map_type;
 
 	// a map of methods for the given class
 	method_map_type methods_;

@@ -5,9 +5,21 @@ if (NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 project(cpptcl_example_functions)
+message(INFO, "compiler id ${CMAKE_CXX_COMPILER_ID}")
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+    list(APPEND OPTS -stdlib=libc++)
+    list(APPEND OPTS -Wno-reserved-id-macro)
+    list(APPEND OPTS -Wno-padded)
+    list(APPEND OPTS -Wno-c++98-compat)
+endif()
 
 set(CPPTCL_EXAMPLE_FUNCTIONS_VERSION 0.0.1)
 add_compile_options("-DCPPTCL_EXAMPLE_FUNCTIONS_VERSION=\"${CPPTCL_EXAMPLE_FUNCTIONS_VERSION}\"")
+add_compile_options(${OPTS})
 
 add_library(cpptcl_example_functions SHARED cpptcl_example_functions.cc)
 set_target_properties(cpptcl_example_functions PROPERTIES VERSION ${CPPTCL_EXAMPLE_FUNCTIONS_VERSION})
@@ -27,14 +39,3 @@ add_custom_command(TARGET ${PROJECT_NAME}
 
 set(CMAKE_BUILD_TYPE Debug)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_STANDARD 11)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(CMAKE_CXX_EXTENSIONS OFF)
-    list(APPEND OPTS -stdlib=libc++)
-    list(APPEND OPTS -Wno-reserved-id-macro)
-    list(APPEND OPTS -Wno-padded)
-    list(APPEND OPTS -Wno-c++98-compat)
-endif()
-
-add_compile_options(${OPTS})
