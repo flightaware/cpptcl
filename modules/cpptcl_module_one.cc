@@ -35,4 +35,5 @@ CPPTCL_MODULE(Cpptcl_module_one, i) {
 	i.def("helloVar", helloVar);
 	i.def("helloArray", helloArray);
 	i.def("helloArray2", helloArray2);
+	i.pkg_provide("module_one","1.0");
 }
