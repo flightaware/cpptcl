@@ -17,6 +17,16 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+//
+// Using TCL stubs is the default behavior
+//
+#ifndef CPPTCL_NO_TCL_STUBS
+    #ifndef USE_TCL_STUBS
+    #define USE_TCL_STUBS
+    #endif
+#endif
+
 #include "tcl.h"
 
 namespace Tcl {
@@ -84,10 +94,10 @@ void set_result(Tcl_Interp *interp, void *p);
 void set_result(Tcl_Interp *interp, object const &o);
 
 // helper functor for converting Tcl objects to the given type
-#include "details/conversions.h"
+#include "cpptcl/details/conversions.h"
 
 // dispatchers able to capture (or ignore) the result
-#include "details/dispatchers.h"
+#include "cpptcl/details/dispatchers.h"
 
 // helper for checking for required number of parameters
 // (throws tcl_error when not met)
@@ -164,16 +174,16 @@ template <class C> class class_handler : public class_handler_base {
 };
 
 // factory functions for creating class objects
-#include "details/constructors.h"
+#include "cpptcl/details/constructors.h"
 
 // actual callback envelopes
-#include "details/callbacks.h"
+#include "cpptcl/details/callbacks.h"
 
 // actual method envelopes
-#include "details/methods.h"
+#include "cpptcl/details/methods.h"
 
 // helper meta function for figuring appropriate constructor callback
-#include "details/metahelpers.h"
+#include "cpptcl/details/metahelpers.h"
 
 // this class is used to provide the "def" interface for defining
 // class member functions
@@ -406,7 +416,7 @@ class interpreter {
 	bool owner_;
 };
 
-#include "cpptcl_object.h"
+#include "cpptcl/cpptcl_object.h"
 
 // the InputIterator should give object& or Tcl_Obj* when dereferenced
 template <class InputIterator> details::result interpreter::eval(InputIterator first, InputIterator last) {
@@ -423,14 +433,14 @@ template <class InputIterator> details::result interpreter::eval(InputIterator f
 namespace details {
 
 // additional callback envelopes for variadic functions
-#include "details/callbacks_v.h"
+#include "cpptcl/details/callbacks_v.h"
 
 // additional method envelopes for variadic methods
-#include "details/methods_v.h"
+#include "cpptcl/details/methods_v.h"
 
 } // namespace details
 
-#include "details/bind.h"
+#include "cpptcl/details/bind.h"
 
 } // namespace Tcl
 

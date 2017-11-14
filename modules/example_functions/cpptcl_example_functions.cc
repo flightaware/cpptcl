@@ -1,5 +1,6 @@
-#include "cpptcl.h"
 #include <iostream>
+
+#include "cpptcl/cpptcl.h"
 
 using namespace std;
 using namespace Tcl;
@@ -29,7 +30,8 @@ void helloArray2(object const &name, object const &address) {
 	cout << address["city"].get() << " " << address["state"].get() << endl;
 }
 
-CPPTCL_MODULE(Cpptcl_module_one, i) {
+CPPTCL_MODULE(Cpptcl_example_functions, i) {
+	i.pkg_provide("cpptcl_example_functions", CPPTCL_EXAMPLE_FUNCTIONS_VERSION);
 	i.def("hello", hello);
 	i.def("helloProc", helloProc);
 	i.def("helloVar", helloVar);

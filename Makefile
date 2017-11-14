@@ -3,11 +3,19 @@ all:
 	mkdir build
 	(cd build; cmake ..; make)
 
-clean:
-	rm -rf build build_xcode
+install: all
+	(cd build; make install)
 
-test:	all
-	tclsh tests/cpptcl_module_one.tcl 
+.PHONY: modules
+
+modules:
+	(cd modules/example_functions; mkdir build; cd build; cmake -DCPPTCL_SOURCE_DIR=$PWD/../../../ ..; make)
+
+clean:
+	rm -rf build build_xcode modules/example_functions/build
+
+test:	all modules
+	/usr/bin/env LD_LIBRARY_PATH=./build TCLLIBPATH=./modules/example_functions/build tclsh tests/cpptcl_module_one.tcl 
 
 format:
 	find . -name \*.h -o -name \*.cc | xargs clang-format-4.0 -style=file  -i

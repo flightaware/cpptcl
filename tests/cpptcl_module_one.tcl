@@ -1,5 +1,4 @@
-set ext [info sharedlibextension]
-load "build/libcpptcl_module_one$ext"
+package require cpptcl_example_functions
 
 proc pow {x y} {
    expr "$x ** $y"
