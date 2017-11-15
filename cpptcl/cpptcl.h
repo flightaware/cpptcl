@@ -324,7 +324,7 @@ class interpreter {
 	interpreter(const interpreter &i);
 
   public:
-	interpreter(Tcl_Interp *, bool owner = true);
+	interpreter(Tcl_Interp *, bool owner = false);
 	~interpreter();
 
 	void make_safe();
@@ -441,6 +441,11 @@ namespace details {
 } // namespace details
 
 #include "cpptcl/details/bind.h"
+
+std::ostream & operator<<(std::ostream &os, const object& obj)
+{
+    return os << obj.get<std::string>();
+}
 
 } // namespace Tcl
 

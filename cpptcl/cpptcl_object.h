@@ -8,6 +8,43 @@
 #ifndef CPPTCL_OBJECT_H
 #define CPPTCL_OBJECT_H
 
+class object;
+
+template <typename T, typename O> class maybe_object {
+private:
+	interpreter const & interp_;
+	T * obj_;
+	std::string name_;
+	std::string index_;
+
+public:
+	maybe_object(T *obj, interpreter const & interp, std::string name, std::string index): obj_(obj), interp_(interp), name_(name), index_(index) {}
+
+	bool has_value() const {
+		return obj_ != 0;
+	}
+
+	bool exists() const {
+		return has_value();
+	}
+
+	operator bool() const {
+		return has_value();
+	}
+
+	O get() const {
+		if (obj_ == 0) {
+			throw tcl_error(std::string("array ") + name_ + " does not have field " + index_);
+		}
+		return O(obj_);
+	}
+
+	O operator *() const {
+		return get();
+	}
+};
+
+
 // object wrapper
 class object {
   public:
@@ -116,13 +153,11 @@ class object {
 		}
 	}
 
-	const object operator[](std::string idx) const {
+	const maybe_object<Tcl_Obj, object> operator()(std::string idx) const {
 		Tcl_Obj *array = obj_;
-		Tcl_Obj *o = Tcl_GetVar2Ex(interp_, Tcl_GetString(array), idx.c_str(), TCL_LEAVE_ERR_MSG);
-		if (o == 0) {
-			throw tcl_error(this->get_interp());
-		}
-		return object(o);
+		const char *name = Tcl_GetString(array);
+		Tcl_Obj *o = Tcl_GetVar2Ex(interp_, name, idx.c_str(), TCL_LEAVE_ERR_MSG);
+		return maybe_object<Tcl_Obj, object>(o, interp_, std::string(name), idx);
 	}
 
 	const bool exists(std::string idx) const {
@@ -130,6 +165,8 @@ class object {
 		Tcl_Obj *o = Tcl_GetVar2Ex(interp_, Tcl_GetString(array), idx.c_str(), 0);
 		return (o != 0);
 	}
+
+	std::string to_string() const;
 
   private:
 	// helper function used from copy constructors

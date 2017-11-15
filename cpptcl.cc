@@ -545,6 +545,8 @@ template <> string object::get<string>(interpreter &) const {
 	return string(buf, buf + len);
 }
 
+string object::to_string() const { return get<string>(); }
+
 char const *object::get() const { return Tcl_GetString(obj_); }
 
 char const *object::get(size_t &size) const {
