@@ -6,6 +6,8 @@ endif()
 
 project(cpptcl)
 
+set(TCLSH_VERSION_STRING, "8.6")
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -17,7 +19,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     list(APPEND OPTS -Wno-c++98-compat)
 endif()
 
+include(FindTCL)
 include(FindTclStub)
+include (CTest)
 
 if(NOT TCL_FOUND)
   message(FATAL_ERROR "Tcl installation not found")
@@ -47,3 +51,7 @@ target_link_libraries(cpptcl ${TCL_STUB_LIBRARY})
 install(TARGETS cpptcl LIBRARY DESTINATION lib)
 install(FILES ${HDRS} DESTINATION include/cpptcl)
 install(FILES ${HDRS_DETAILS} DESTINATION include/cpptcl/details)
+
+add_executable(cpptcl_test test/test_main.cc)
+add_test(test1 cpptcl_test)
+target_link_libraries(cpptcl_test PUBLIC cpptcl ${TCL_LIBRARY} ${TCL_STUB_LIBRARY})

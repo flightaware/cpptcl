@@ -630,7 +630,13 @@ Tcl_Interp *object::get_interp() const { return interp_; }
 
 Tcl::interpreter *interpreter::defaultInterpreter = nullptr;
 
-interpreter::interpreter() : interpreter(Tcl_CreateInterp(), true) { throw tcl_error("expecting a single interpreter"); }
+interpreter::interpreter() {
+	interp_ = Tcl_CreateInterp();
+	owner_ = true;
+	if (defaultInterpreter) {
+		throw tcl_error("expecting a single interpreter");
+	}
+}
 
 interpreter::interpreter(Tcl_Interp *interp, bool owner) {
 	interp_ = interp;

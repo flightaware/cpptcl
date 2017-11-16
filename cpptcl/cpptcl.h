@@ -320,10 +320,10 @@ class interpreter {
 	}
 
   private:
-	interpreter();
 	interpreter(const interpreter &i);
 
   public:
+	interpreter();
 	interpreter(Tcl_Interp *, bool owner = false);
 	~interpreter();
 
