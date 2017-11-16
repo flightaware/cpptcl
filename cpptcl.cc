@@ -692,6 +692,13 @@ void interpreter::pkg_provide(string const &name, string const &version) {
 	}
 }
 
+void interpreter::create_namespace(string const &name) {
+	if ( Tcl_CreateNamespace(interp_, name.c_str(), 0, 0) == 0) {
+		throw tcl_error(interp_);
+	}
+}
+
+
 void interpreter::create_alias(string const &cmd, interpreter &targetInterp, string const &targetCmd) {
 	int cc = Tcl_CreateAlias(interp_, cmd.c_str(), targetInterp.interp_, targetCmd.c_str(), 0, 0);
 	if (cc != TCL_OK) {
