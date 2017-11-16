@@ -42,6 +42,22 @@ public:
 	O operator *() const {
 		return get();
 	}
+
+	std::string asString() const {
+		return get().asString();
+	}
+
+	int asInt() const {
+		return get().asInt();
+	}
+
+	long asLong() const {
+		return get().asLong();
+	}
+
+	double asDouble() const {
+		return get().asDouble();
+	}
 };
 
 
@@ -166,7 +182,10 @@ class object {
 		return (o != 0);
 	}
 
-	std::string to_string() const;
+	std::string asString() const;
+	int asInt() const;
+	long asLong() const;
+	double asDouble() const;
 
   private:
 	// helper function used from copy constructors

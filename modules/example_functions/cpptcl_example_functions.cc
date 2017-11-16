@@ -32,9 +32,9 @@ void helloArray2(object const &name, object const &address) {
 
 	std::string state("state");
 	// Check for exists with if
-        if (/* info exists */ address(state)) {
+        if (address(state)) {
 		// C++ does not allow $ to be an operator, so use *
-		cout << "state " << *address(state) << endl;
+		cout << "state " << address(state).asString() << endl;
 	}
 
 	// TODO
@@ -42,7 +42,7 @@ void helloArray2(object const &name, object const &address) {
 
 	cout << "exists zip? " << address.exists("zip") << endl;
 	cout << "exception stack expected" << endl;
-	std::string zip = (*address("zip")).to_string();
+	std::string zip = address("zip").asString();
 	cout << zip << endl;
 
 }

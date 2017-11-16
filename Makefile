@@ -16,7 +16,9 @@ install: all
 test: all
 	(cd build; make test)
 
-$(MODULE_LIBRARY): $(CPPTCL_LIBRARY) $(MODULE_PATH)/build/Makefile
+MODULE_SRCS = modules/example_functions/cpptcl_example_functions.cc
+
+$(MODULE_LIBRARY): $(CPPTCL_LIBRARY) $(MODULE_PATH)/build/Makefile $(MODULE_SRCS)
 	(cd $(MODULE_PATH)/build; make)
 
 $(MODULE_PATH)/build/Makefile: $(MODULE_PATH)/CMakeLists.txt
