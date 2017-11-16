@@ -400,6 +400,9 @@ class interpreter {
 	// register a package info (useful when defining packages)
 	void pkg_provide(std::string const &name, std::string const &version);
 
+	// create a namespace
+	void create_namespace(std::string const &name);
+
 	// helper for cleaning up callbacks in non-managed interpreters
 	static void clear_definitions(Tcl_Interp *);
 
