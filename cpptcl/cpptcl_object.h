@@ -169,7 +169,7 @@ class object {
 		}
 	}
 
-	const maybe_object<Tcl_Obj, object> operator()(std::string idx) const {
+	const maybe_object<Tcl_Obj, object> operator()(std::string const & idx) const {
 		Tcl_Obj *array = obj_;
 		const char *name = Tcl_GetString(array);
 		Tcl_Obj *o = Tcl_GetVar2Ex(interp_, name, idx.c_str(), TCL_LEAVE_ERR_MSG);

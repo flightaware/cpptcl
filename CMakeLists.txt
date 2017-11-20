@@ -27,7 +27,8 @@ if(NOT TCL_FOUND)
   message(FATAL_ERROR "Tcl installation not found")
 endif()
 
-set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details ${TCL_INCLUDE_PATH})
 
