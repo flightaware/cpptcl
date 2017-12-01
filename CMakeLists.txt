@@ -21,12 +21,16 @@ endif()
 
 include (CTest)
 
-set(TCL_INCLUDE_PATH /usr/local/include)
-find_library(TCL_LIBRARY NAMES tcl8.6 PATHS /usr/local/lib)
-find_library(TCL_STUB_LIBRARY NAMES tclstub8.6 PATHS /usr/local/lib)
+find_path(TCL_INCLUDE_PATH tcl.h PATHS /usr/local/include/tcl8.6 /usr/local/include /usr/include/tcl8.6 NO_DEFAULT_PATH)
+find_library(TCL_LIBRARY NAMES tcl8.6 tcl86 PATHS /usr/local/lib)
+find_library(TCL_STUB_LIBRARY NAMES tclstub8.6 tclstub86 PATHS /usr/local/lib)
+
+message(INFO " Tcl include ${TCL_INCLUDE_PATH}")
+message(INFO " Tcl library ${TCL_LIBRARY}")
+message(INFO " Tcl stub library ${TCL_STUB_LIBRARY}")
 
 if(NOT TCL_LIBRARY)
-  message(FATAL_ERROR "Tcl library not found")
+  message(FATAL_ERROR " Tcl library not found")
 endif()
 
 #set(CMAKE_BUILD_TYPE Debug)
