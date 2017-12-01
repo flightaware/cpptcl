@@ -19,12 +19,14 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     list(APPEND OPTS -Wno-c++98-compat)
 endif()
 
-include(FindTCL)
-include(FindTclStub)
 include (CTest)
 
-if(NOT TCL_FOUND)
-  message(FATAL_ERROR "Tcl installation not found")
+set(TCL_INCLUDE_PATH /usr/local/include)
+find_library(TCL_LIBRARY NAMES tcl8.6 PATHS /usr/local/lib)
+find_library(TCL_STUB_LIBRARY NAMES tclstub8.6 PATHS /usr/local/lib)
+
+if(NOT TCL_LIBRARY)
+  message(FATAL_ERROR "Tcl library not found")
 endif()
 
 #set(CMAKE_BUILD_TYPE Debug)
