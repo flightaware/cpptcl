@@ -18,7 +18,7 @@ private:
 	std::string index_;
 
 public:
-	maybe_object(T *obj, interpreter const & interp, std::string name, std::string index): obj_(obj), interp_(interp), name_(name), index_(index) {}
+	maybe_object(T *obj, interpreter const & interp, std::string name, std::string index): interp_(interp), obj_(obj), name_(name), index_(index) {}
 
 	bool has_value() const {
 		return obj_ != 0;
