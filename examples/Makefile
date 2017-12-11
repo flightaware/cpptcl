@@ -1,9 +1,9 @@
 COMPILER = clang++
-CXXFLAGS = 
+CXXFLAGS = -std=c++14
 MODULEFLAGS = -shared
 INCLUDES = -I.. -I/usr/local/include/tcl8.6
 LIBDIRS = -L/usr/local/lib
-LIBS = -ltclstub8.6
+LIBS = -ltclstub86
 
 OUTPUTS = example2 example6
 

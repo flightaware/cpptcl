@@ -445,7 +445,7 @@ namespace details {
 
 #include "cpptcl/details/bind.h"
 
-std::ostream & operator<<(std::ostream &os, const object& obj)
+inline std::ostream & operator<<(std::ostream &os, const object& obj)
 {
     return os << obj.get<std::string>();
 }

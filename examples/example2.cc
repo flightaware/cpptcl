@@ -1,6 +1,6 @@
 // example2.cc
 
-#include "cpptcl.h"
+#include "cpptcl/cpptcl.h"
 #include <iostream>
 #include <string>
 
