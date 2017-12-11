@@ -1,11 +1,11 @@
-COMPILER = g++
-CXXFLAGS = -Wall -Wno-long-long -pedantic
+COMPILER = clang++
+CXXFLAGS = -Wall -Wno-long-long -pedantic -std=c++14
 TESTFLAGS = 
-INCLUDES = -I.. -I/usr/local/include/tcl8.4 -I/usr/local/include/boost_1_33_1
+INCLUDES = -I.. -I/usr/local/include/tcl8.6
 LIBDIRS = -L/usr/local/lib
-LIBS = -ltcl84
+LIBS = -ltcl86 -ltclstub86
 
-OUTPUTS = test1 test2.so test3 test4 test5 test6
+OUTPUTS = test1 test3 test4 test5 test6
 
 all : build dotest
 
@@ -15,7 +15,7 @@ test1 : test1.cc cpptcl.o
 	${COMPILER} test1.cc cpptcl.o -o $@ ${CXXFLAGS} ${TESTFLAGS} ${INCLUDES} ${LIBDIRS} ${LIBS}
 
 test2.so : test2.cc cpptcl.o
-	${COMPILER} -shared test2.cc cpptcl.o -o $@ ${CXXFLAGS} ${TESTFLAGS} ${INCLUDES}
+	${COMPILER} -shared -fPIC test2.cc cpptcl.o -o $@ ${CXXFLAGS} ${TESTFLAGS} ${INCLUDES}
 
 test3 : test3.cc cpptcl.o
 	${COMPILER} test3.cc cpptcl.o -o $@ ${CXXFLAGS} ${TESTFLAGS} ${INCLUDES} ${LIBDIRS} ${LIBS}
@@ -30,13 +30,13 @@ test6 : test6.cc cpptcl.o
 	${COMPILER} test6.cc cpptcl.o -o $@ ${CXXFLAGS} ${TESTFLAGS} ${INCLUDES} ${LIBDIRS} ${LIBS}
 
 
-cpptcl.o : ../cpptcl.cc ../cpptcl.h
+cpptcl.o : ../cpptcl.cc ../cpptcl/cpptcl.h
 	${COMPILER} ../cpptcl.cc -c -o $@ ${CXXFLAGS} ${TESTFLAGS} ${INCLUDES}
 
 
 dotest :
 	./test1
-	tclsh8.4 test2.tcl
+	tclsh8.6 test2.tcl
 	./test3
 	./test4
 	./test5

@@ -7,8 +7,9 @@
 // warranty, and with no claim as to its suitability for any purpose.
 //
 
-#include "cpptcl.h"
+#include "cpptcl/cpptcl.h"
 #include <iostream>
+#include <assert.h>
 
 using namespace Tcl;
 

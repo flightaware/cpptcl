@@ -7,9 +7,10 @@
 // warranty, and with no claim as to its suitability for any purpose.
 //
 
-#include "../cpptcl.h"
+#include "../cpptcl/cpptcl.h"
 #include <cmath>
 #include <iostream>
+#include <assert.h>
 
 using namespace Tcl;
 
@@ -17,7 +18,7 @@ object fun(object const &o) {
 	Tcl_Interp *interp = o.get_interp();
 	interpreter i(interp, false);
 
-	return object(static_cast<int>(o.length(i)));
+	return object(static_cast<int>(o.size(i)));
 }
 
 void test1() {
@@ -114,20 +115,20 @@ void test1() {
 	}
 	{
 		object o(123);
-		assert(o.length(i) == 1);
+		assert(o.size(i) == 1);
 		o = "Ala ma kota";
-		assert(o.length(i) == 3);
-		assert(o.at(i, 1).get<std::string>(i) == "ma");
+		assert(o.size(i) == 3);
+		assert(o.at(1, i).get<std::string>(i) == "ma");
 	}
 	{
 		object o("Ala ma kota");
-		o.append(i, object("na"));
-		o.append(i, object("punkcie"));
-		o.append(i, object("psa"));
-		assert(o.length(i) == 6);
+		o.append(object("na"), i);
+		o.append(object("punkcie"), i);
+		o.append(object("psa"), i);
+		assert(o.size(i) == 6);
 		assert(o.get<std::string>(i) == "Ala ma kota na punkcie psa");
-		o.replace(i, 2, 1, object("hopla"));
-		assert(o.length(i) == 6);
+		o.replace(2, 1, object("hopla"), i);
+		assert(o.size(i) == 6);
 		assert(o.get<std::string>(i) == "Ala ma hopla na punkcie psa");
 	}
 	{
@@ -142,9 +143,9 @@ void test1() {
 	{
 		object o1("malego kota");
 		object o2("ma");
-		o2.append(i, o1); // o2=="ma {malego kota}"
+		o2.append(o1, i); // o2=="ma {malego kota}"
 		object o3("Ala");
-		o3.append(i, o2); // o3=="Ala {ma {malego kota}}"
+		o3.append(o2, i); // o3=="Ala {ma {malego kota}}"
 		object o4("list");
 		object o5("set");
 
@@ -170,7 +171,7 @@ void test2() {
 
 	object in("Ala ma kota");
 	object cmd("fun");
-	cmd.append(i, in);
+	cmd.append(in, i);
 	int ret = i.eval(cmd);
 	assert(ret == 3);
 }
