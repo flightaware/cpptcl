@@ -1,13 +1,16 @@
 // example6.cc
 
-#include "cpptcl/cpptcl.h"
 #include <iostream>
+
+#include "tcl.h"
+#include "cpptcl/cpptcl.h"
 
 using namespace std;
 using namespace Tcl;
 
 int main() {
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 
 	int numbers[] = {5, 7, 1, 6, 3, 9, 7};
 	size_t elems = sizeof(numbers) / sizeof(int);
