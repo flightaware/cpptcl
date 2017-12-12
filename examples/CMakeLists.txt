@@ -31,11 +31,10 @@ if(NOT TCL_LIBRARY)
   message(FATAL_ERROR " Tcl library not found")
 endif()
 
-find_library(CPPTCL_LIBRARY cpptcl PATHS /usr/local/lib)
-find_path (CPPTCL_INCLUDE_DIRS cpptcl/cpptcl.h PATHS ${CMAKE_INCLUDE_PATH})
+find_library(CPPTCL_LIBRARY cpptcl HINTS ${CMAKE_CURRENT_SOURCE_DIR}/../build PATHS /usr/local/lib)
+find_path (CPPTCL_INCLUDE_DIRS cpptcl/cpptcl.h HINTS ${CMAKE_CURRENT_SOURCE_DIR}/.. PATHS ${CMAKE_INCLUDE_PATH})
 
-#set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 
 include_directories(${CPPTCL_INCLUDE_DIRS} ${TCL_INCLUDE_PATH})
 
