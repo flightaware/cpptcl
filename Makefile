@@ -15,6 +15,7 @@ install: all
 
 test: all
 	(cd build; make test)
+	(cd test; make test)
 
 MODULE_SRCS = modules/example_functions/cpptcl_example_functions.cc
 
