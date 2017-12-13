@@ -64,7 +64,8 @@ add_executable(test_main test_main.cc ../cpptcl.cc)
 add_test(test_main test_main)
 target_link_libraries(test_main PUBLIC ${TCL_LIBRARY} ${TCL_STUB_LIBRARY})
 
+set(TCL_TCLSH tclsh8.6)
 add_library(test2 SHARED test2.cc ../cpptcl.cc)
 target_link_libraries(test2 PUBLIC ${TCL_LIBRARY} ${TCL_STUB_LIBRARY})
-add_test(NAME test2 COMMAND tclsh ../test2.tcl)
+add_test(NAME test2 COMMAND ${TCL_TCLSH} ../test2.tcl)
 
