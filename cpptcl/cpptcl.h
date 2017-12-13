@@ -321,9 +321,9 @@ class interpreter {
 
   private:
 	interpreter(const interpreter &i);
+	interpreter();
 
   public:
-	interpreter();
 	interpreter(Tcl_Interp *, bool owner = false);
 	~interpreter();
 
