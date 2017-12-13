@@ -7,6 +7,7 @@
 // warranty, and with no claim as to its suitability for any purpose.
 //
 
+#define CPPTCL_NO_TCL_STUBS
 #include "../cpptcl/cpptcl.h"
 #include <iostream>
 #include <assert.h>
@@ -16,7 +17,8 @@ using namespace Tcl;
 int fun() { return 7; }
 
 void test1() {
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 
 	i.eval("namespace eval NS {}");
 	i.def("NS::fun", fun);
@@ -26,7 +28,8 @@ void test1() {
 }
 
 void test2() {
-	interpreter i1, i2;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i1(interp, true), i2(interp, false);       
 
 	i1.def("fun", fun);
 	i2.create_alias("fun2", i1, "fun");

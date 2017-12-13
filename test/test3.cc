@@ -7,6 +7,7 @@
 // warranty, and with no claim as to its suitability for any purpose.
 //
 
+#define CPPTCL_NO_TCL_STUBS
 #include "cpptcl/cpptcl.h"
 #include <iostream>
 #include <sstream>
@@ -58,7 +59,8 @@ void use(C *p) { p->fun0(); }
 void sinkFun(C *p) { delete p; }
 
 void test1() {
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 
 	i.class_<C>("C", init<int, std::string const &>());
 	i.class_<C>("C2", init<int>());

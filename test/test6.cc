@@ -7,6 +7,7 @@
 // warranty, and with no claim as to its suitability for any purpose.
 //
 
+#define CPPTCL_NO_TCL_STUBS
 #include "../cpptcl/cpptcl.h"
 #include <iostream>
 #include <assert.h>
@@ -67,7 +68,8 @@ class C {
 };
 
 void test1() {
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 	std::stringstream ss("set i 5\nset i");
 
 	int ret = i.eval(ss);
@@ -75,7 +77,8 @@ void test1() {
 }
 
 void test2() {
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 	i.def("fun1", funv1);
 	i.def("fun1v", funv1, variadic());
 

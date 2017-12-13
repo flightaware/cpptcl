@@ -7,23 +7,23 @@
 // warranty, and with no claim as to its suitability for any purpose.
 //
 
+#define CPPTCL_NO_TCL_STUBS
 #include "../cpptcl/cpptcl.h"
 #include <cmath>
 #include <iostream>
 #include <assert.h>
+#include <string.h>
 
 using namespace Tcl;
 
 object fun(object const &o) {
-	Tcl_Interp *interp = o.get_interp();
-	interpreter i(interp, false);
-
-	return object(static_cast<int>(o.size(i)));
+	return object(static_cast<int>(o.size()));
 }
 
 void test1() {
 	char buf[] = {1, 2, 3, 4};
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 
 	{
 		object o(true);
@@ -166,7 +166,8 @@ void test1() {
 }
 
 void test2() {
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 	i.def("fun", fun);
 
 	object in("Ala ma kota");
