@@ -4,6 +4,10 @@ if (NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
     set(CMAKE_CXX_COMPILER clang++)
 endif()
 
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "FreeBSD") 
+    set(CMAKE_CXX_COMPILER clang++40)
+endif()
+
 project(cpptcl)
 
 set(TCLSH_VERSION_STRING, "8.6")
