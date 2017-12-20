@@ -1,5 +1,5 @@
-CC=/usr/local/bin/clang40
-CXX=/usr/local/bin/clang++40
+CC=/usr/local/bin/clang38
+CXX=/usr/local/bin/clang++38
 
 .export CC
 .export CXX
