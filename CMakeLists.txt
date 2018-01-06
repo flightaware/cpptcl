@@ -37,7 +37,6 @@ include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details ${TCL_INCLUD
 add_compile_options(${OPTS})
 
 list(APPEND SRCS ${CMAKE_SOURCE_DIR}/cpptcl.cc)
-list(APPEND SRCS ${CMAKE_SOURCE_DIR}/dstring.cc)
 list(APPEND HDRS ${CMAKE_SOURCE_DIR}/cpptcl/cpptcl.h)
 list(APPEND HDRS ${CMAKE_SOURCE_DIR}/cpptcl/cpptcl_object.h)
 list(APPEND HDRS_DETAILS ${CMAKE_SOURCE_DIR}/cpptcl/details/callbacks.h)
