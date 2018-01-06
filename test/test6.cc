@@ -8,14 +8,16 @@
 // warranty, and with no claim as to its suitability for any purpose.
 //
 
-#include "../cpptcl.h"
+#define CPPTCL_NO_TCL_STUBS
+#include "../cpptcl/cpptcl.h"
 #include <iostream>
+#include <assert.h>
 
 using namespace Tcl;
 
 int funv1(int, object const &o) {
 	interpreter i(o.get_interp(), false);
-	return o.length(i);
+	return o.size(i);
 }
 
 int funv2(int a, int b, object const &o) {
@@ -25,7 +27,7 @@ int funv2(int a, int b, object const &o) {
 	interpreter i(o.get_interp(), false);
 	assert(o.get<int>(i) == 3);
 
-	return o.length(i);
+	return o.size(i);
 }
 
 int funv3(int a, int b, object const &o) {
@@ -33,12 +35,12 @@ int funv3(int a, int b, object const &o) {
 	assert(b == 2);
 
 	interpreter i(o.get_interp(), false);
-	assert(o.length(i) == 3);
-	assert(o.at(i, 0).get<int>(i) == 3);
-	assert(o.at(i, 1).get<int>(i) == 4);
-	assert(o.at(i, 2).get<int>(i) == 5);
+	assert(o.size(i) == 3);
+	assert(o.at(0, i).get<int>(i) == 3);
+	assert(o.at(1, i).get<int>(i) == 4);
+	assert(o.at(2, i).get<int>(i) == 5);
 
-	return o.length(i);
+	return o.size(i);
 }
 
 class C {
@@ -47,19 +49,19 @@ class C {
 
 	C(int, object const &o) {
 		interpreter i(o.get_interp(), false);
-		len_ = o.length(i);
+		len_ = o.size(i);
 	}
 
 	int getLen() const { return len_; }
 
 	int len(int, object const &o) {
 		interpreter i(o.get_interp(), false);
-		return o.length(i);
+		return o.size(i);
 	}
 
 	int lenc(int, object const &o) const {
 		interpreter i(o.get_interp(), false);
-		return o.length(i);
+		return o.size(i);
 	}
 
   private:
@@ -67,7 +69,8 @@ class C {
 };
 
 void test1() {
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 	std::stringstream ss("set i 5\nset i");
 
 	int ret = i.eval(ss);
@@ -75,7 +78,8 @@ void test1() {
 }
 
 void test2() {
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 	i.def("fun1", funv1);
 	i.def("fun1v", funv1, variadic());
 

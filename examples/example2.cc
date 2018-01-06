@@ -1,8 +1,10 @@
 // example2.cc
 
-#include "cpptcl.h"
 #include <iostream>
 #include <string>
+
+#include "tcl.h"
+#include "cpptcl/cpptcl.h"
 
 using namespace std;
 using namespace Tcl;
@@ -10,7 +12,8 @@ using namespace Tcl;
 void hello() { cout << "Hello C++/Tcl!" << endl; }
 
 int main() {
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 	i.def("hello", hello);
 
 	string script = "for {set i 0} {$i != 4} {incr i} { hello }";

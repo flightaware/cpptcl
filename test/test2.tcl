@@ -8,7 +8,8 @@
 # warranty, and with no claim as to its suitability for any purpose.
 #
 
-load ./test2.so
+set e [info sharedlibextension]
+load "./libtest2$e"
 
 set i [fun1]
 if {$i != 7} { error "Assertion failed" }

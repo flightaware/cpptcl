@@ -8,8 +8,10 @@
 // warranty, and with no claim as to its suitability for any purpose.
 //
 
-#include "cpptcl.h"
+#define CPPTCL_NO_TCL_STUBS
+#include "cpptcl/cpptcl.h"
 #include <iostream>
+#include <assert.h>
 
 using namespace Tcl;
 
@@ -21,7 +23,8 @@ int fun4(std::string const &s) { return s.size(); }
 int fun5(char const *s) { return std::string(s).size(); }
 
 void test1() {
-	interpreter i;
+	Tcl_Interp * interp = Tcl_CreateInterp();
+	interpreter i(interp, true);
 	i.make_safe();
 
 	std::string s = i.eval("return \"ala ma kota\"");

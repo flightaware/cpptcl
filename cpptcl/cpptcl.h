@@ -322,9 +322,9 @@ class interpreter {
 
   private:
 	interpreter(const interpreter &i);
+	interpreter();
 
   public:
-	interpreter();
 	interpreter(Tcl_Interp *, bool owner = false);
 	~interpreter();
 
@@ -446,7 +446,7 @@ namespace details {
 
 #include "cpptcl/details/bind.h"
 
-std::ostream & operator<<(std::ostream &os, const object& obj)
+inline std::ostream & operator<<(std::ostream &os, const object& obj)
 {
     return os << obj.get<std::string>();
 }

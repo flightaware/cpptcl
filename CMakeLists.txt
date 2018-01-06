@@ -1,14 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 
-if (NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux") 
-    set(CMAKE_CXX_COMPILER clang++)
-endif()
-
 project(cpptcl)
 
 set(TCLSH_VERSION_STRING, "8.6")
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -19,12 +15,18 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     list(APPEND OPTS -Wno-c++98-compat)
 endif()
 
-include(FindTCL)
-include(FindTclStub)
 include (CTest)
 
-if(NOT TCL_FOUND)
-  message(FATAL_ERROR "Tcl installation not found")
+find_path(TCL_INCLUDE_PATH tcl.h PATHS /usr/local/include/tcl8.6 /usr/local/include /usr/include/tcl8.6 NO_DEFAULT_PATH)
+find_library(TCL_LIBRARY NAMES tcl8.6 tcl86 PATHS /usr/local/lib)
+find_library(TCL_STUB_LIBRARY NAMES tclstub8.6 tclstub86 PATHS /usr/local/lib)
+
+message(INFO " Tcl include ${TCL_INCLUDE_PATH}")
+message(INFO " Tcl library ${TCL_LIBRARY}")
+message(INFO " Tcl stub library ${TCL_STUB_LIBRARY}")
+
+if(NOT TCL_LIBRARY)
+  message(FATAL_ERROR " Tcl library not found")
 endif()
 
 #set(CMAKE_BUILD_TYPE Debug)
