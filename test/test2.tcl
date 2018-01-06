@@ -1,5 +1,6 @@
 #
 # Copyright (C) 2004-2006, Maciej Sobczak
+# Copyright (C) 2017-2018, FlightAware LLC
 #
 # Permission to copy, use, modify, sell and distribute this software
 # is granted provided this copyright notice appears in all copies.

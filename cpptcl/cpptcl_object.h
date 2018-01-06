@@ -34,7 +34,7 @@ public:
 
 	O get() const {
 		if (obj_ == 0) {
-			throw tcl_error(std::string("array ") + name_ + " does not have field " + index_);
+			throw tcl_error(std::string("no such element '" + index_ + "' in array '" + name_ + "'"));
 		}
 		return O(obj_);
 	}
