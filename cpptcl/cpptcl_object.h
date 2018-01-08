@@ -23,7 +23,7 @@ private:
 	std::string index_;
 
 public:
-	maybe_object(Tcl_Obj *obj, interpreter const & interp, std::string name, std::string index): obj_(obj), interp_(interp), name_(name), index_(index) {}
+	maybe_object(Tcl_Obj *obj, interpreter const & interp, std::string name, std::string index): interp_(interp), obj_(obj), name_(name), index_(index) {}
 
 	bool has_value() const {
 		return obj_ != 0;
@@ -189,6 +189,18 @@ class object {
 		Tcl_Obj *o = Tcl_GetVar2Ex(interp_, Tcl_GetString(array), idx.c_str(), 0);
 		return (o != 0);
 	}
+    
+    // Bind variable to name in TCL interpreter
+    // This increases the ref count so if the C++ object
+    // leaves scope the variable exists
+    void bind(std::string const& variableName) {
+        object n(variableName);
+        Tcl_IncrRefCount(obj_);
+        if (interp_ == nullptr) {
+            interp_ = interpreter::getDefault()->get();
+        }
+        Tcl_ObjSetVar2(interp_, n.get_object(), nullptr, obj_, 0);
+    }
 
 	std::string asString() const;
 	int asInt() const;

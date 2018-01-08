@@ -394,6 +394,10 @@ class interpreter {
 	// the InputIterator should give object& or Tcl_Obj* when dereferenced
 	template <class InputIterator> details::result eval(InputIterator first, InputIterator last);
 
+	// Get a variable from TCL interpreter with Tcl_GetVar
+	details::result getVar(std::string const &scalarTclVariable);
+	details::result getVar(std::string const &arrayTclVariable, std::string const &arrayIndex);
+
 	// create alias from the *this interpreter to the target interpreter
 	void create_alias(std::string const &cmd, interpreter &targetInterp, std::string const &targetCmd);
 
