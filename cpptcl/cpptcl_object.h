@@ -205,16 +205,4 @@ template <> char const *object::get<char const *>(interpreter &i) const;
 template <> std::string object::get<std::string>(interpreter &i) const;
 template <> std::vector<char> object::get<std::vector<char>>(interpreter &i) const;
 
-class upvar {
-  public:
-	upvar(Tcl_Obj *obj) : objtarget(object(obj, true)) {}
-	void set_interp(Tcl_Interp *interp) { this->interp = interp; }
-	Tcl_Interp *get_interp() const { return interp; }
-	object const &get() const { return objtarget; }
-
-  private:
-	object objtarget;
-	Tcl_Interp *interp;
-};
-
 #endif /* CPPTCL_OBJECT_H */

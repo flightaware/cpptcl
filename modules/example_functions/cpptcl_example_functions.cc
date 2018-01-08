@@ -6,7 +6,6 @@ using namespace std;
 using namespace Tcl;
 
 void hello();
-void helloVar(upvar const &first, upvar const &last);
 void helloArray(object const &name);
 void helloArray2(object const &name, object const &address);
 
@@ -19,8 +18,6 @@ void helloProc() {
 	int v = pow(2, 5);
 	cout << "pow(2,5) == " << v << " pow(5,2) = " << pow(5, 2) << " expr {1} = " << expr(1) << endl;
 }
-
-void helloVar(upvar const &first, upvar const &last) { cout << "Hello C++/Tcl! " << first.get().get() << " " << last.get().get() << endl; }
 
 void helloArray(object const &name) { cout << "Hello C++/Tcl! from array " << name("first").get() << " " << name("last").get() << endl; }
 
@@ -51,7 +48,6 @@ CPPTCL_MODULE(Cpptcl_example_functions, i) {
 	i.pkg_provide("cpptcl_example_functions", CPPTCL_EXAMPLE_FUNCTIONS_VERSION);
 	i.def("hello", hello);
 	i.def("helloProc", helloProc);
-	i.def("helloVar", helloVar);
 	i.def("helloArray", helloArray);
 	i.def("helloArray2", helloArray2);
 }

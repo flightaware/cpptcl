@@ -829,12 +829,3 @@ object tcl_cast<object>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 
 	return o;
 }
-
-upvar tcl_cast<upvar>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool byReference) {
-	if (byReference) {
-		obj = Tcl_ObjGetVar2(interp, obj, NULL, 0);
-	}
-	upvar o(obj);
-	o.set_interp(interp);
-	return o;
-}

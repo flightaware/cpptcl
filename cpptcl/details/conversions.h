@@ -49,11 +49,6 @@ template <typename T> class tcl_cast_by_reference {
 	static bool const value = false;
 };
 
-template <> class tcl_cast_by_reference<upvar const &> {
-  public:
-	static bool const value = true;
-};
-
 // the following specializations are implemented
 
 template <> struct tcl_cast<int> { static int from(Tcl_Interp *, Tcl_Obj *, bool byReference = false); };
@@ -70,4 +65,3 @@ template <> struct tcl_cast<char const *> { static char const *from(Tcl_Interp *
 
 template <> struct tcl_cast<object> { static object from(Tcl_Interp *, Tcl_Obj *, bool byReference = false); };
 
-template <> struct tcl_cast<upvar> { static upvar from(Tcl_Interp *, Tcl_Obj *, bool byReference = true); };
