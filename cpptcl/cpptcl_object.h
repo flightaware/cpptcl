@@ -10,15 +10,20 @@
 
 class object;
 
-template <typename T, typename O> class maybe_object {
+/*
+ * Allow object to hold a optional value of the same class object. By using a template, O can be replaced with object
+ * when the class object is actually defined.
+ */
+template <typename O> class maybe_object {
 private:
 	interpreter const & interp_;
-	T * obj_;
+	Tcl_Obj * obj_;
+	// name and index are just for producing nice error messages
 	std::string name_;
 	std::string index_;
 
 public:
-	maybe_object(T *obj, interpreter const & interp, std::string name, std::string index): interp_(interp), obj_(obj), name_(name), index_(index) {}
+	maybe_object(Tcl_Obj *obj, interpreter const & interp, std::string name, std::string index): obj_(obj), interp_(interp), name_(name), index_(index) {}
 
 	bool has_value() const {
 		return obj_ != 0;
@@ -32,6 +37,9 @@ public:
 		return has_value();
 	}
 
+	/*
+	 * This value reference cannot compile until object is known.
+	 */
 	O get() const {
 		if (obj_ == 0) {
 			throw tcl_error(std::string("no such element '" + index_ + "' in array '" + name_ + "'"));
@@ -169,11 +177,11 @@ class object {
 		}
 	}
 
-	const maybe_object<Tcl_Obj, object> operator()(std::string const & idx) const {
+	const maybe_object<object> operator()(std::string const & idx) const {
 		Tcl_Obj *array = obj_;
 		const char *name = Tcl_GetString(array);
 		Tcl_Obj *o = Tcl_GetVar2Ex(interp_, name, idx.c_str(), TCL_LEAVE_ERR_MSG);
-		return maybe_object<Tcl_Obj, object>(o, interp_, std::string(name), idx);
+		return maybe_object<object>(o, interp_, std::string(name), idx);
 	}
 
 	const bool exists(std::string idx) const {
