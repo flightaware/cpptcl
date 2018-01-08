@@ -202,6 +202,19 @@ class object {
         Tcl_ObjSetVar2(interp_, n.get_object(), nullptr, obj_, 0);
     }
 
+    // Bind array value in TCL interpreter
+    // This increases the ref count so if the C++ object
+    // leaves scope the variable exists
+    void bind(std::string const& variableName, std::string const& indexName) {
+        object n(variableName);
+        object i(indexName);
+        Tcl_IncrRefCount(obj_);
+        if (interp_ == nullptr) {
+            interp_ = interpreter::getDefault()->get();
+        }
+        Tcl_ObjSetVar2(interp_, n.get_object(), i.get_object(), obj_, 0);
+    }
+
 	std::string asString() const;
 	int asInt() const;
 	long asLong() const;

@@ -36,4 +36,7 @@ int main()
     Tcl::object interp_var("something");
     interp_var.set_interp(interp);
     interp_var.bind("var1");
+
+    Tcl::object(99.0).bind("env", "ninety-nine");
+    i.eval("puts \"bound array value to $env(ninety-nine)\"");
 }
