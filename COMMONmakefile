@@ -7,6 +7,9 @@ all: $(MODULE_LIBRARY)
 build/Makefile: CMakeLists.txt
 	(mkdir -p build; cd build; cmake ..)
 
+debug: CMakeLists.txt
+	(mkdir -p build; cd build; cmake -DCMAKE_BUILD_TYPE=Debug ..)
+
 $(CPPTCL_LIBRARY): build/Makefile
 	(cd build; make)
 
@@ -36,7 +39,5 @@ format:
 	find . -name \*.h -o -name \*.cc | xargs clang-format-4.0 -style=file  -i
 
 xcode:
-	rm -rf build_xcode
-	mkdir build_xcode
-	(cd build_xcode; cmake -G Xcode ..)
-	exec open build_xcode/cpptcl.xcodeproj
+	mkdir -p build_xcode
+	(cd build_xcode; cmake -DCMAKE_BUILD_TYPE=Debug -G Xcode ..)
