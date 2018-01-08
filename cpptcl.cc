@@ -720,6 +720,19 @@ result interpreter::getVar(string const &variableName) {
 	return result(interp_);
 }
 
+bool interpreter::exists(string const &variableName, string const &indexName) {
+    object n = object(variableName.c_str());
+    object i = object(indexName.c_str());
+    Tcl_Obj * obj = Tcl_ObjGetVar2(interp_, n.get_object(), i.get_object(), 0);
+    return (obj != NULL);
+}
+
+bool interpreter::exists(string const &variableName) {
+    object n = object(variableName.c_str());
+    Tcl_Obj * obj = Tcl_ObjGetVar2(interp_, n.get_object(), nullptr, 0);
+    return (obj != NULL);
+}
+
 void interpreter::pkg_provide(string const &name, string const &version) {
 	int cc = Tcl_PkgProvide(interp_, name.c_str(), version.c_str());
 	if (cc != TCL_OK) {

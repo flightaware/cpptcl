@@ -15,6 +15,12 @@ int main()
     Tcl::object tcl_version = i.getVar("tcl_version");
     cout << "tcl version " << tcl_version.asString() << endl;
     
+    cout << "tcl_version exists 1 == " << i.exists("tcl_version") << endl;
+    cout << "env(HOME) exists 1 == " << i.exists("env(HOME)") << endl;
+    cout << "env HOME exists 1 == " << i.exists("env", "HOME") << endl;
+    cout << "env NOT_HOME exists 0 == " << i.exists("env", "NOT_HOME") << endl;
+    cout << "tikle exists 0 == " << i.exists("tikle") << endl;
+
     Tcl::object env = i.getVar("env", "HOME");
     cout << "env(HOME) = " << env.asString() << endl;
     

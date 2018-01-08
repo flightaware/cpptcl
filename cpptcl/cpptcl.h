@@ -398,6 +398,10 @@ class interpreter {
 	details::result getVar(std::string const &scalarTclVariable);
 	details::result getVar(std::string const &arrayTclVariable, std::string const &arrayIndex);
 
+    // check if variables exist
+    bool exists(std::string const &scalarTclVariable);
+    bool exists(std::string const &arrayTclVariable, std::string const &arrayIndex);
+
 	// create alias from the *this interpreter to the target interpreter
 	void create_alias(std::string const &cmd, interpreter &targetInterp, std::string const &targetCmd);
 
