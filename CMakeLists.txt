@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.0)
 
 project(cpptcl)
 
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to Release as none was specified.")
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+message(INFO " cmake build type ${CMAKE_BUILD_TYPE}")
+
 set(TCLSH_VERSION_STRING, "8.6")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -28,9 +34,6 @@ message(INFO " Tcl stub library ${TCL_STUB_LIBRARY}")
 if(NOT TCL_LIBRARY)
   message(FATAL_ERROR " Tcl library not found")
 endif()
-
-#set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_BUILD_TYPE Release)
 
 include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/details ${TCL_INCLUDE_PATH})
 

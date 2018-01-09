@@ -5,9 +5,6 @@ proc pow {x y} {
 }
 
 hello
-set first "The"
-set last "Dude"
-helloVar first last
 array set name {first "The" last "Dude"}
 helloArray name
 array set address {state "TX" city "Houston"}
