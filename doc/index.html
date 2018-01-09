@@ -22,27 +22,31 @@ C++ library for interoperability between C++ and Tcl</span> </td>
 </table>
 <br>
 <br>
-Welcome to the <a href="http://cpptcl.sourceforge.net/index.html">C++/Tcl</a>
-library!<br>
-<br>
-This library was written for C++ and Tcl programmers.<br>
-It was inspired by the <a target="_blank"
+Welcome to <a href="http://cpptcl.sourceforge.net/index.html">C++/Tcl</a>!<br>
+<p>
+cpptcl creates a bridge between C++ and Tcl, providing deep interoperability between the two languages.
+<p>
+C++ developers can use Tcl to create new and powerful ways to interact with, debug, construct automated testing for, and orchestrate the high level activies of their applications.
+<p>
+Tcl developers can use C++ to create high performance code that leverages all of the C++ ecosystem while providing dead simple ways to bring their C++ functions into Tcl, with expected Tcl semantics and no funny business.  Writing C++ extensions for Tcl using cpptcl is vastly easier and requires far less code than extending Tcl in C.
+<p>
+cpptcl was inspired by the <a target="_blank"
  href="http://www.boost.org/libs/python/doc/index.html">Boost.Python</a>
-library and was deliberately designed to provide a similar interface,
-taking into account the limitations of Tcl.<br>
+library and was designed to provide a similar interface,
+while taking into account the nature of Tcl.<br>
 <br>
-The C++/Tcl library offers the following features:<br>
-<ol>
+C++/Tcl provides the following features:<br>
+<ul>
   <li>Support for both extending Tcl with C++ modules and embedding Tcl
 in C++ applications.</li>
-  <li>Possibility to expose free C++ functions as commands in Tcl.</li>
-  <li>Possibility to define classes and class member functions, visible
-in Tcl in the style
+  <li>The ability to expose C++ functions as commands in Tcl with automatic argument/data type management and conversion.</li>
+  <li>The ability to define classes and class member functions and make
+	  them accessible from Tcl in a manner
 similar to <a target="_blank" href="http://www.swig.org/">SWIG</a>
 wrappers.</li>
-  <li>Possibility to manipulate Tcl lists and objects from the C++ code.<br>
+  <li>The ability to manipulate Tcl lists and objects from C++.<br>
   </li>
-</ol>
+</ul>
 <br>
 <a href="quickstart.html">Quick Start</a><br>
 <div style="margin-left: 40px;"><a href="quickstart.html#extending">Extending

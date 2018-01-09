@@ -23,13 +23,13 @@ C++ library for interoperability between C++ and Tcl</span> </td>
 <br>
 [<a href="index.html">top</a>][<a href="freefun.html">next</a>]<br>
 <h4>Quick Start</h4>
-The C++/Tcl library allows to easily integrate these two languages.<br>
-It is easy to both extend the Tcl interpreter and to embed the Tcl
-interpreter in a regular C++ code.<br>
+C++/Tcl makes it easy to interface between C++ and Tcl.<br>
+You can both extend the Tcl interpreter in C++ and embed a Tcl
+interpreter into a regular C++ program.<br>
 <br>
 <h4><a name="extending"></a>Hello World (extending Tcl)<br>
 </h4>
-Let's take the following C++ file:<br>
+Let's consider the following C++ file:<br>
 <br>
 <div style="margin-left: 40px;"><code>// example1.cc<br>
 <br>
@@ -109,13 +109,14 @@ Hello C++/Tcl!<br>
 $ <br>
 </code></div>
 <br>
-In other words, the Tcl interpreter exists in a C++ application as a
-regular object.<br>
-It is possible to define new commands in this interpreter and execute
-arbitrary Tcl scripts in it, so that C++ and Tcl communicate with each
-other.<br>
-<br>
-<br>
+Our C++ program has started up like any other C/C++ program, and the main
+is been invoked, i.e. Tcl didn't grab the main() and do its own thing; our normal main ran.
+<p>
+In our main routine we created a Tcl interpreter as a C++ object and manipulated it to
+create a new Tcl command and evaluate Tcl code to do things with that command.
+<p>
+Pretty cool.
+<p>
 [<a href="index.html">top</a>][<a href="freefun.html">next</a>]<br>
 <br>
 <hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006,

@@ -26,63 +26,56 @@ C++ library for interoperability between C++ and Tcl</span> </td>
 <h4>Exposing Free Functions<br>
 </h4>
 You have already seen an example of how to expose a free C++ function
-to the Tcl interpreter.<br>
+to the Tcl interpreter.<p>
 No matter whether you write an extension module or embed Tcl in a C++
-application, the way to expose a free function is alway the same:<br>
-<br>
+application, the way to expose a free function is alway the same:<p>
 <div style="margin-left: 40px;"><code>i.def("tcl_function_name",
 cpp_function_name);</code><br>
 </div>
-<br>
-where <code>i</code> is the name of the interpreter object.<br>
+<p>
+...where <code>i</code> is the name of the interpreter object.<p>
 In the above example, the <code>"tcl_function_name"</code> is a name
-that will be visible to the Tcl scripts and the <code>cpp_function_name</code>
-is a name of (or a pointer to) the function in the C++ code.<br>
-They do not have to be the same, although this is a usual practice,
-like in the <a href="quickstart.html">Quick Start</a> examples:<br>
-<br>
+that will be visible to Tcl scripts, and the <code>cpp_function_name</code>
+is a name of (or a pointer to) the function in the C++ code to implement it.<p>
+They do not have to be the same, although this is the usual practice,
+like in the <a href="quickstart.html">Quick Start</a> examples:<p>
 <div style="margin-left: 40px;"><code>i.def("hello", hello);</code><br>
 </div>
-<br>
-In fact, anything that is a valid command name in Tcl can be used as
-the first parameter.<br>
-For example, let's suppose that we want to expose the following C++
-function:<br>
+<p>
+Suppose that we want to expose the following C++ function:<p>
 <br>
 <div style="margin-left: 40px;"><code>int sum(int a, int b)<br>
 {<br>
 &nbsp;&nbsp;&nbsp;&nbsp; return a + b;<br>
 }</code><br>
 </div>
-<br>
-later we can define it in the interpreter like this:<br>
-<br>
+<p>
+We can define it in the interpreter like this:
+<p>
 <div style="margin-left: 40px;"><code>i.def("<span
  style="font-weight: bold;">add</span>", sum);</code><br>
 <code>i.def("<span style="font-weight: bold;">+</span>", sum);</code><br>
 <code></code></div>
-<br>
-so that we can call the <code>sum</code> function from Tcl like this:<br>
-<br>
+<p>
+so that we can call the <code>sum</code> function from Tcl like this:
+<p>
 <div style="margin-left: 40px;"><code>add 3 4</code><br>
 </div>
-<br>
-or:<br>
-<br>
+<p>
+or:<p>
 <div style="margin-left: 40px;"><code>+ 3 4</code><br>
 </div>
-<br>
-As you see, the same function can be defined in the interpreter more
-than once, with different Tcl names.<br>
-If you try to define some function with the name that is already
-registered, the old registration will be overwritten.<br>
-<br>
-You have also noticed that the exposed functions can have parameters
-and return values.<br>
-Functions with up to 9 parameters can be exposed.<br>
-<br>
-At the moment, parameters and the return value of exposed functions can
-have the following types:<br>
+<p>
+As you can see, the same function can be defined in the interpreter multiple times with different Tcl names.<p>
+If you create a Tcl command that's the same name as a command that already exists,
+the old command is replaced.
+<p>
+You probably noticed that the exposed functions can have parameters and can return values.
+<p>
+Functions with up to 9 parameters can be exposed.
+<p>
+At the moment, parameters and the return value of exposed functions can have the following types:
+<p>
 <ul>
   <li>std::string, char const *<br>
   </li>
@@ -95,18 +88,18 @@ have the following types:<br>
   </li>
 </ul>
 In addition, the parameter of the function can be of type <code>T
-const &amp;</code>, where T is any of the above.<br>
+const &amp;</code>, where T is any of the above.
+<p>
 This means that only <span style="font-style: italic;">input</span>
 parameters are supported (this may change in future versions of the
-libray).<br>
-<br>
+libray).
+<p>
 <br>
 [<a href="quickstart.html">prev</a>][<a href="index.html">top</a>][<a
  href="classes.html">next</a>]<br>
 <br>
-<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006,
-Maciej
-Sobczak<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006, Maciej Sobczak<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2017-2018, FlightAware LLC<br>
 <br>
 </body>
 </html>
