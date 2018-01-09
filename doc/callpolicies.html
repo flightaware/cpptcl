@@ -28,21 +28,20 @@ C++ library for interoperability between C++ and Tcl</span> </td>
 sinks</span><br>
 <br>
 C++ has extremely rich type system. You can see this when you expose
-some free or member function:<br>
+some free function or member function:<br>
 <br>
 <div style="margin-left: 40px;"><code>i.def("fun", fun);</code><br>
 </div>
 <br>
 The name of the function, <code>fun</code>, is enough for the C++/Tcl
-libray to discover the following information:<br>
+libray to discover the following information:
+<p>
 <ul>
   <li>Whether the function returns anything and what exactly.</li>
   <li>Whether it has any parameters, how many of them and what are
-their types.<br>
-  </li>
+their types.</li>
 </ul>
-Sadly, these two pieces of information are sometimes not enough.<br>
-Consider the following C++ functions:<br>
+Sadly, these two pieces of information are sometimes not enough.  Consider the following C++ functions:<br>
 <br>
 <div style="margin-left: 40px;"><code>SomeClass * produce()</code><br>
 <code>{</code><br>
@@ -71,11 +70,11 @@ After doing so, you can safely use them like here:<br>
 <br>
 The problem is that the <code>produce</code> command will not register
 any new Tcl command that would be responsible for managing member
-function calls or explicit object destruction, because, simply, it has
+function calls or explicit object destruction, because it has
 no idea to which class definition (in the Tcl sense, not the C++ sense)
 the returned object belongs. In other words, the object name that is
 returned by the <code>produce</code> command has no meaning to the Tcl
-interpreter.<br>
+interpreter.<p>
 To solve this problem, some additional information has to be provided
 while exposing the <code>produce</code> function:<br>
 <br>
@@ -85,16 +84,16 @@ factory("SomeClass"));</code><br>
 <br>
 As you see, there is additional parameter that provides hints to the
 C++/Tcl library. Such hints are called <span
- style="font-style: italic;">policies</span>.<br>
+ style="font-style: italic;">policies</span>.
 The <code>factory</code> policy above provides the following
-information:<br>
+information:<p>
 <ul>
   <li>The objects returned by the <code>produce</code> function are
 created with the <code>new</code> expression, or by other means. In
-any case - the pointer is returned.<br>
+any case the pointer is returned.<br>
   </li>
   <li>These objects are meant to be handled as if they were created by
-regular constructor.</li>
+a regular constructor.</li>
   <ul>
     <li>In particular, a new command has to be registered for each
 object returned by this function.</li>
@@ -103,19 +102,21 @@ Tcl class.<br>
     </li>
   </ul>
 </ul>
-<br>
-What about the consume function?<br>
-There is also a problem - normally, objects are destroyed by explicit
-call to their <code>-delete</code> method. This call does two things:<br>
+<p>
+What about the consume function?
+<p>
+There is also the issue that, normally, objects are destroyed by explicit
+calls to their <code>-delete</code> method. This call does two things:<p>
 <ul>
   <li>It <code>delete</code>s the objects (in the C++ sense), and</li>
   <li>it unregisters the Tcl command associated with that object.</li>
 </ul>
 We already know that the <code>consume()</code> function does the
-first thing. It is important also to do the second, otherwise the Tcl
+former. It is important also to do latter, otherwise the Tcl
 interpreter will be polluted with commands associated with non-existent
 objects (any call to such a command will result in undefined behaviour,
-which usually means a program crash).<br>
+which usually means a program crash).
+<p>
 In other words, we have to provide a hint to the C++/Tcl library that
 the <code>consume()</code> function is a <span
  style="font-style: italic;">sink</span> for objects:<br>
@@ -243,15 +244,15 @@ As you see, policies can be chained. Their order is not important,
 apart from the fact that the <code>factory</code> policy can be
 related to only one class, so it is the last <code>factory</code>
 policy in the chain that is effective.<br>
-<br>
-<br>
-<span style="font-weight: bold;"><a name="variadic"></a>Variadic
-functions</span><br>
-<br>
+<p>
+<span style="font-weight: bold;"><a name="variadic"></a>Variadic functions</span>
+<p>
 Another thing that can be controlled from policies is whether the
 function is variadic (whether it can accept variable number of
-arguments) or not.<br>
-This feature is supported for:<br>
+arguments) or not.
+<p>
+This feature is supported for:
+<p>
 <ul>
   <li>free functions</li>
   <li>constructors</li>
@@ -260,7 +261,8 @@ This feature is supported for:<br>
 </ul>
 In order for the function (or constructor or method) to be variadic, <span
  style="font-style: italic;">both</span> of the following conditions
-must be true:<br>
+must be true:
+<p>
 <ol>
   <li>The type of last (or the only) parameter must be <code>object
 const &amp;<br>
@@ -269,22 +271,25 @@ const &amp;<br>
 defining that function.</li>
 </ol>
 The last formal parameter is of the generic <code>object</code> type
-and it allows to retrieve both single values and lists.<br>
-An example may help:<br>
-<br>
+and it allows to retrieve both single values and lists.
+<p>
+An example may be of help:
+<p>
 <div style="margin-left: 40px;"><code>void fun(int a, int b, <span
  style="font-weight: bold;">object const &amp;c</span>);<br>
-<br>
+<p>
 // later:<br>
 </code><code>i.def("fun", fun);</code><br>
 <code></code></div>
 <br>
-Above, the fun() function is defined in the interpreter as having <span
- style="font-style: italic;">exactly</span> three parameters.<br>
+The fun() function above is defined in the interpreter as having <span
+ style="font-style: italic;">exactly</span> three parameters.
+ <p>
 If more arguments are provided, they are discarded. If less, an error
-is reported.<br>
-Now, consider the following change:<br>
-<br>
+is reported.
+<p>
+Now, consider the following change:
+<p>
 <div style="margin-left: 40px;"><code>void fun(int a, int b, <span
  style="font-weight: bold;">object const &amp;c</span>);<br>
 <br>
@@ -321,11 +326,12 @@ defined as:<br>
 <br>
 Note that the last parameter in the constructor has type <code>object
 const &amp;</code> and that the <code>variadic()</code> policy was
-provided.<br>
-This constructor will accept 1, 2 or more arguments.<br>
-<br>
-Of course, the variadic class methods can be defined in the same way:<br>
-<br>
+provided.
+<p>
+This constructor will accept 1, 2 or more arguments.
+<p>
+Of course, the variadic class methods can be defined in the same way:
+<p>
 <div style="margin-left: 40px;"><code>class MyClass</code><br>
 <code>{</code><br>
 <code>public:</code><br>
@@ -338,19 +344,19 @@ Of course, the variadic class methods can be defined in the same way:<br>
 <code>&nbsp;&nbsp;&nbsp; .def("fun", &amp;MyClass::fun, <span
  style="font-weight: bold;">variadic()</span>);</code><br>
 <code></code></div>
-<br>
+<p>
 As you see, the special, last parameter may be the only one, or
-preceded by any number of "normal" parameters.<br>
-<br>
+preceded by any number of "normal" parameters.
+<p>
 The possibility to define a variadic function is currently the only way
-to write commands that accept more than 9 arguments.<br>
-<br>
+to write commands that accept more than 9 arguments.
+<p>
 The <code>variadic()</code> policy may be combined (in any order) with
-other policies.<br>
-<br>
+other policies.
+<p>
 The following is a full example of module that defines one variadic
-function:<br>
-<br>
+function:
+<p>
 <div style="margin-left: 40px;"><code>#include "cpptcl.h"</code><br>
 <code></code><br>
 <code>using namespace Tcl;</code><br>
@@ -379,9 +385,9 @@ o.get&lt;int&gt;(i);</code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp; i.def("sum", sumAll, variadic());</code><br>
 <code>}</code><br>
 <code></code></div>
-<br>
-This module can be used from the Tcl interpreter like here;<br>
-<br>
+<p>
+This module can be used from the Tcl interpreter like here:
+<p>
 <div style="margin-left: 40px;"><code>% load ./mymodule.so </code><br>
 <code>% sum</code><br>
 <code>0</code><br>
@@ -396,9 +402,8 @@ This module can be used from the Tcl interpreter like here;<br>
 [<a href="objects.html">prev</a>][<a href="index.html">top</a>][<a
  href="goodies.html">next</a>]<br>
 <br>
-<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006,
-Maciej
-Sobczak<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006, Maciej Sobczak<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2017-2018, FlightAware LLC<br>
 <br>
 </body>
 </html>

@@ -23,12 +23,12 @@ C++ library for interoperability between C++ and Tcl</span> </td>
 <br>
 [<a href="goodies.html">prev</a>][<a href="index.html">top</a>][<a
  href="compiling.html">next</a>]<br>
-<h4>Errors<br>
+<h4>Error Handling<br>
 </h4>
 All Tcl errors, conversion errors and others that may take place when
-calling Tcl code from C++, are translated and reported as exceptions of
-the <code>tcl_error</code> type:<br>
-<br>
+calling Tcl code from C++ are translated and reported as exceptions of
+the <code>tcl_error</code> type:
+<p>
 <div style="margin-left: 40px;"><code>namespace Tcl</code><br>
 <code>{</code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp; class tcl_error : public
@@ -38,11 +38,11 @@ std::runtime_error</code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp; };</code><br>
 <code>}</code><br>
 <code></code></div>
-<br>
+<p>
 This means that the simplest framework for handling such errors may
 look
-like:<br>
-<br>
+like:
+<p>
 <div style="margin-left: 40px;"><code>int main()</code><br>
 <code>{</code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp; try</code><br>
@@ -64,20 +64,18 @@ other error</code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp; }</code><br>
 <code>}</code><br>
 <code></code></div>
-<br>
+<p>
 On the other hand, when calling C++ from Tcl, all C++ exceptions are
 translated and presented as regular Tcl errors, with error message
 taken from the C++ exception, if it was from the <code>std::exception</code>
 family. For all other C++ exceptions, the <code>"Unknown error."</code>
-message is returned.<br>
-<br>
-<br>
+message is returned.
+<p>
 [<a href="goodies.html">prev</a>][<a href="index.html">top</a>][<a
  href="compiling.html">next</a>]<br>
 <br>
-<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006,
-Maciej
-Sobczak<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006, Maciej Sobczak<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2017-2018, FlightAware LLC<br>
 <br>
 </body>
 </html>

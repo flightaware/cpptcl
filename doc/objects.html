@@ -24,12 +24,12 @@ C++ library for interoperability between C++ and Tcl</span> </td>
 [<a href="classes.html">prev</a>][<a href="index.html">top</a>][<a
  href="callpolicies.html">next</a>]<br>
 <h4>Objects and Lists</h4>
-In order to help with managing Tcl lists, there is an object wrapper
-that allows to manipulate Tcl objects.<br>
-The class <code>object</code> provides the following members:<br>
-<br>
-1. Constructors<br>
-<br>
+Tcl objects are wrapped by full-fledged C++ objects in cpptcl.  This wrapper provides all sorts of ways to manipulate Tcl objects that have a nice C++ feel while still letting you deal with Tcl stuff in a Tcl way, such as lists, variables, arrays, etc.
+<p>
+The class <code>object</code> provides the following members:
+<p>
+1. Constructors
+<p>
 <div style="margin-left: 40px;"><code>object();<br>
 explicit object(bool b);</code><br>
 <code>object(char const *buf, size_t size);</code><br>
@@ -44,24 +44,24 @@ explicit object(bool b);</code><br>
 <code>explicit object(std::string const &amp;s);</code><br>
 <code></code></div>
 <br>
-The above constructors allow to create a Tcl object from common C++
-types.<br>
+The above constructors provides the means of creating Tcl objects from common C++ types.
+<p>
 The constructor accepting iterators is for the list creation. The
 provided iterator type should give either <code>object</code> or <code>Tcl_Obj*</code>
-type when dereferenced.<br>
-<br>
-2. Copy constructors<br>
-<br>
+type when dereferenced.
+<p>
+2. Copy constructors
+<p>
 <div style="margin-left: 40px;"><code>explicit object(Tcl_Obj *o, bool
 shared = false);</code><br>
 <code>object(object const &amp;other, bool shared = false);<br>
 </code><code></code></div>
-<br>
+<p>
 If the <code>shared</code> flag is set, the newly created object
-wrapper will not duplicate the underlying Tcl object.<br>
-<br>
-3. Assignment-related members<br>
-<br>
+wrapper will not duplicate the underlying Tcl object.
+<p>
+3. Assignment-related members
+<p>
 <div style="margin-left: 40px;"><code>object &amp; assign(bool b);</code><br>
 <code>object &amp; resize(size_t
 size);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -90,13 +90,13 @@ object &amp; assign(Tcl_Obj *o);<br>
 <code>object &amp; operator=(object const &amp;o);</code><br>
 <code>object &amp; swap(object &amp;other);</code><br>
 <code></code></div>
-<br>
+<p>
 The <code>assign</code> member function accepting iterators is for the
 list assignment. The provided iterator type should give either <code>object</code>
 or <code>Tcl_Obj*</code> type when dereferenced.<br>
-<br>
-4. Non-modifying accessors<br>
-<br>
+<p>
+4. Non-modifying accessors
+<p>
 <div style="margin-left: 40px;"><code>template &lt;typename T&gt;</code><br>
 <code>T get(interpreter &amp;i) const;</code><br>
 <code></code><br>
@@ -148,38 +148,38 @@ count, object const &amp;o);</code><br>
 *interp);</code><br>
 <code>Tcl_Interp * get_interp() const;</code><br>
 <code></code></div>
-<br>
+<p>
 These functions may help to transmit the information about the
 "current" interpreter when the C++ function accepting <code>object</code>
-parameter is called from Tcl.<br>
-The <code>set_interp</code> function is automatically called by the
-underlying
+parameter is called from Tcl.
+<p>
+The <code>set_interp</code> function is automatically called by the underlying
 conversion logic, so that the C++ code can use the other function for
-accessing the interpreter.<br>
-This may be useful when the C++ code needs to invoke other functions
-that may change the interpreter state.<br>
-<br>
+accessing the interpreter.
+<p>
+This may be useful when the C++ code needs to invoke other functions that may change the interpreter state.
+<p>
 Note: If there is any need to extract the interpreter from the existing
 object, it may be helpful to wrap the resulting raw pointer into the <code>interpreter</code>
-object, which will not disrupt its normal lifetime:<br>
-<br>
+object, which will not disrupt its normal lifetime:
+<p>
 <div style="margin-left: 40px;"><code>interpreter i(o.get_interp(),
 false);</code><br>
 </div>
-<br>
+<p>
 The second parameter given to the <code>interpreter</code> constructor
 means that the newly created <code>i</code> object will not claim
-ownership to the pointer received from <code>get_interp()</code>.<br>
+ownership to the pointer received from <code>get_interp()</code>.
+<p>
 In other words, the destructor of the object <code>i</code> will not
-free the actual interpreter.<br>
-<br>
-<br>
+free the actual interpreter.
+<p>
 <span style="font-weight: bold;">Example:</span><br>
-<br>
+<p>
 The following complete program creates the list of numbers, sorts it
 using the Tcl interpreter and prints the results on the console (note:
-this is not the most efficient way to sort numbers in C++!):<br>
-<br>
+this is not the most efficient way to sort numbers in C++!):
+<p>
 <div style="margin-left: 40px;"><code>// example6.cc</code><br>
 <code></code><br>
 <code>#include "../cpptcl.h"</code><br>
@@ -246,20 +246,20 @@ When this program is run, it gives the following output:<br>
 <code></code></div>
 <br>
 In this example, an empty <code>tab</code> object is created and all
-numbers are appended to it to form a Tcl list of numbers.<br>
+numbers are appended to it to form a Tcl list of numbers.
+<p>
 After that, the sorting command is composed and executed (as you see,
-the <code>object</code> can be passed for evaluation).<br>
+the <code>object</code> can be passed for evaluation).
+<p>
 The result of the command is retrieved also in the form of object
 wrapper, which is used to decompose the resulting list into its
-elements.<br>
-<br>
-<br>
+elements.
+<p>
 [<a href="classes.html">prev</a>][<a href="index.html">top</a>][<a
  href="callpolicies.html">next</a>]<br>
 <br>
-<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006,
-Maciej
-Sobczak<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2004-2006, Maciej Sobczak<br>
+<hr style="width: 100%; height: 2px;">Copyright &copy; 2017-2018, FlightAware LLC<br>
 <br>
 </body>
 </html>
