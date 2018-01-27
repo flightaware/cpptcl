@@ -548,6 +548,7 @@ template <> string object::get<string>(interpreter &) const {
 
 string object::asString() const { return get<string>(); }
 int object::asInt() const { return get<int>(); }
+bool object::asBool() const { return get<bool>(); }
 long object::asLong() const { return get<long>(); }
 double object::asDouble() const { return get<double>(); }
 

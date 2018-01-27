@@ -55,6 +55,10 @@ public:
 		return get().asString();
 	}
 
+	bool asBool() const {
+		return get().asBool();
+	}
+
 	int asInt() const {
 		return get().asInt();
 	}
@@ -217,6 +221,7 @@ class object {
 
 	std::string asString() const;
 	int asInt() const;
+	bool asBool() const;
 	long asLong() const;
 	double asDouble() const;
 
