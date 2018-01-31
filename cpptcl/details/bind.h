@@ -7,16 +7,15 @@ template <typename R, typename T1, typename T2 = void, typename T3 = void, typen
 
 	R operator()(const T1 &t1, const T2 &t2, const T3 &t3, const T4 &t4, const T5 &t5, const T6 &t6, const T7 &t7, const T8 &t8, const T9 &t9) {
 		object obj(cmd_);
-		object e(t1);
-		e.append(object(t2));
-		e.append(object(t3));
-		e.append(object(t4));
-		e.append(object(t5));
-		e.append(object(t6));
-		e.append(object(t7));
-		e.append(object(t8));
-		e.append(object(t9));
-		obj.append_list(e);
+		obj.append(t1);
+		obj.append(t2);
+		obj.append(t3);
+		obj.append(t4);
+		obj.append(t5);
+		obj.append(t6);
+		obj.append(t7);
+		obj.append(t8);
+		obj.append(t9);
 		return (R)(interpreter::getDefault()->eval(obj));
 	}
 };
@@ -30,15 +29,14 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
 
 	R operator()(const T1 &t1, const T2 &t2, const T3 &t3, const T4 &t4, const T5 &t5, const T6 &t6, const T7 &t7, const T8 &t8) {
 		object obj(cmd_);
-		object e(t1);
-		e.append(object(t2));
-		e.append(object(t3));
-		e.append(object(t4));
-		e.append(object(t5));
-		e.append(object(t6));
-		e.append(object(t7));
-		e.append(object(t8));
-		obj.append_list(e);
+		obj.append(t1);
+		obj.append(t2);
+		obj.append(t3);
+		obj.append(t4);
+		obj.append(t5);
+		obj.append(t6);
+		obj.append(t7);
+		obj.append(t8);
 		return (R)(interpreter::getDefault()->eval(obj));
 	}
 };
@@ -52,14 +50,13 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
 
 	R operator()(const T1 &t1, const T2 &t2, const T3 &t3, const T4 &t4, const T5 &t5, const T6 &t6, const T7 &t7) {
 		object obj(cmd_);
-		object e(t1);
-		e.append(object(t2));
-		e.append(object(t3));
-		e.append(object(t4));
-		e.append(object(t5));
-		e.append(object(t6));
-		e.append(object(t7));
-		obj.append_list(e);
+		obj.append(t1);
+		obj.append(t2);
+		obj.append(t3);
+		obj.append(t4);
+		obj.append(t5);
+		obj.append(t6);
+		obj.append(t7);
 		return (R)(interpreter::getDefault()->eval(obj));
 	}
 };
@@ -73,13 +70,12 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
 
 	R operator()(const T1 &t1, const T2 &t2, const T3 &t3, const T4 &t4, const T5 &t5, const T6 &t6) {
 		object obj(cmd_);
-		object e(t1);
-		e.append(object(t2));
-		e.append(object(t3));
-		e.append(object(t4));
-		e.append(object(t5));
-		e.append(object(t6));
-		obj.append_list(e);
+		obj.append(t1);
+		obj.append(t2);
+		obj.append(t3);
+		obj.append(t4);
+		obj.append(t5);
+		obj.append(t6);
 		return (R)(interpreter::getDefault()->eval(obj));
 	}
 };
@@ -93,12 +89,11 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
 
 	R operator()(const T1 &t1, const T2 &t2, const T3 &t3, const T4 &t4, const T5 &t5) {
 		object obj(cmd_);
-		object e(t1);
-		e.append(object(t2));
-		e.append(object(t3));
-		e.append(object(t4));
-		e.append(object(t5));
-		obj.append_list(e);
+		obj.append(t1);
+		obj.append(t2);
+		obj.append(t3);
+		obj.append(t4);
+		obj.append(t5);
 		return (R)(interpreter::getDefault()->eval(obj));
 	}
 };
@@ -112,11 +107,10 @@ template <typename R, typename T1, typename T2, typename T3, typename T4> struct
 
 	R operator()(const T1 &t1, const T2 &t2, const T3 &t3, const T4 &t4) {
 		object obj(cmd_);
-		object e(t1);
-		e.append(object(t2));
-		e.append(object(t3));
-		e.append(object(t4));
-		obj.append_list(e);
+		obj.append(t1);
+		obj.append(t2);
+		obj.append(t3);
+		obj.append(t4);
 		return (R)(interpreter::getDefault()->eval(obj));
 	}
 };
@@ -130,10 +124,9 @@ template <typename R, typename T1, typename T2, typename T3> struct Bind<R, T1, 
 
 	R operator()(const T1 &t1, const T2 &t2, const T3 &t3) {
 		object obj(cmd_);
-		object e(t1);
-		e.append(object(t2));
-		e.append(object(t3));
-		obj.append_list(e);
+		obj.append(t1);
+		obj.append(t2);
+		obj.append(t3);
 		return (R)(interpreter::getDefault()->eval(obj));
 	}
 };
@@ -147,9 +140,8 @@ template <typename R, typename T1, typename T2> struct Bind<R, T1, T2, void, voi
 
 	R operator()(const T1 &t1, const T2 &t2) {
 		object obj(cmd_);
-		object e(t1);
-		e.append(object(t2));
-		obj.append_list(e);
+		obj.append(object(t1));
+		obj.append(object(t2));
 		return (R)(interpreter::getDefault()->eval(obj));
 	}
 };
@@ -164,7 +156,7 @@ template <typename R, typename T1> struct Bind<R, T1, void, void, void, void, vo
 	R operator()(const T1 &t1) {
 		object obj(cmd_);
 		object e(t1);
-		obj.append_list(e);
+		obj.append(e);
 		return (R)(interpreter::getDefault()->eval(obj));
 	}
 };
