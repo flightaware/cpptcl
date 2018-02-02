@@ -1,6 +1,6 @@
-.if exists(/usr/local/bin/clang38)
-    CC=/usr/local/bin/clang38
-    CXX=/usr/local/bin/clang++38
+.if exists(/usr/local/bin/clang40)
+    CC=/usr/local/bin/clang40
+    CXX=/usr/local/bin/clang++40
 .else
     CC=/usr/bin/clang
     CXX=/usr/bin/clang++
