@@ -32,8 +32,8 @@ $(MODULE_PATH)/build/Makefile: $(MODULE_PATH)/CMakeLists.txt
 clean:
 	rm -rf build build_xcode modules/example_functions/build
 
-test_tcl: all
-	/usr/bin/env LD_LIBRARY_PATH=./build TCLLIBPATH=./modules/example_functions/build tclsh tests/cpptcl_module_one.tcl 
+test_extension: all
+	/usr/bin/env LD_LIBRARY_PATH=./build TCLLIBPATH=./modules/example_functions/build tclsh test/cpptcl_module_one.tcl 
 
 format:
 	find . -name \*.h -o -name \*.cc | xargs clang-format-4.0 -style=file  -i
