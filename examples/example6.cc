@@ -17,11 +17,11 @@ int main() {
 
 	object tab;
 	for (size_t indx = 0; indx != elems; ++indx) {
-		tab.append(object(numbers[indx]), i);
+		tab.append(object(numbers[indx]));
 	}
 
 	object cmd("lsort -integer");
-	cmd.append(tab, i);
+	cmd.append(tab);
 
 	// here, cmd contains the following:
 	// lsort -integer {5 7 1 6 3 9 7}
@@ -34,10 +34,10 @@ int main() {
 	}
 
 	cout << "\n  sorted: ";
-	elems = result.size(i);
+	elems = result.size();
 	for (size_t indx = 0; indx != elems; ++indx) {
-		object obj(result.at(indx, i));
-		int val = obj.get<int>(i);
+		object obj(result.at(indx));
+		int val = obj.get<int>();
 
 		cout << val << ' ';
 	}
