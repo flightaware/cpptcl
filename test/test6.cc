@@ -16,31 +16,28 @@
 using namespace Tcl;
 
 int funv1(int, object const &o) {
-	interpreter i(o.get_interp(), false);
-	return o.size(i);
+	return o.size();
 }
 
 int funv2(int a, int b, object const &o) {
 	assert(a == 1);
 	assert(b == 2);
 
-	interpreter i(o.get_interp(), false);
-	assert(o.get<int>(i) == 3);
+	assert(o.get<int>() == 3);
 
-	return o.size(i);
+	return o.size();
 }
 
 int funv3(int a, int b, object const &o) {
 	assert(a == 1);
 	assert(b == 2);
 
-	interpreter i(o.get_interp(), false);
-	assert(o.size(i) == 3);
-	assert(o.at(0, i).get<int>(i) == 3);
-	assert(o.at(1, i).get<int>(i) == 4);
-	assert(o.at(2, i).get<int>(i) == 5);
+	assert(o.size() == 3);
+	assert(o.at(0).get<int>() == 3);
+	assert(o.at(1).get<int>() == 4);
+	assert(o.at(2).get<int>() == 5);
 
-	return o.size(i);
+	return o.size();
 }
 
 class C {
@@ -48,15 +45,13 @@ class C {
 	C() {}
 
 	C(int, object const &o) {
-		interpreter i(o.get_interp(), false);
-		len_ = o.size(i);
+		len_ = o.size();
 	}
 
 	int getLen() const { return len_; }
 
 	int len(int, object const &o) {
-		interpreter i(o.get_interp(), false);
-		return o.size(i);
+		return o.size();
 	}
 
 	int lenc(int, object const &o) const {

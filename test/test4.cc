@@ -28,14 +28,14 @@ void test1() {
 
 	{
 		object o(true);
-		assert(o.get<bool>(i) == true);
-		assert(object(o).get<bool>(i) == true);
+		assert(o.get<bool>() == true);
+		assert(object(o).get<bool>() == true);
 		o = false;
-		assert(o.get<bool>(i) == false);
-		assert(object(o).get<bool>(i) == false);
+		assert(o.get<bool>() == false);
+		assert(object(o).get<bool>() == false);
 
 		o = 123;
-		assert(o.get<int>(i) == 123);
+		assert(o.get<int>() == 123);
 	}
 	{
 		object o(buf, 4);
@@ -54,87 +54,87 @@ void test1() {
 		assert(memcmp(b, buf, 2) == 0);
 
 		o = 123;
-		assert(o.get<int>(i) == 123);
+		assert(o.get<int>() == 123);
 	}
 	{
 		object o(3.14);
-		assert(std::fabs(o.get<double>(i) - 3.14) < 0.001);
+		assert(std::fabs(o.get<double>() - 3.14) < 0.001);
 		object o2(o);
-		assert(std::fabs(o2.get<double>(i) - 3.14) < 0.001);
+		assert(std::fabs(o2.get<double>() - 3.14) < 0.001);
 
 		o = "Ala ma kota";
 		assert(std::string(o.get()) == "Ala ma kota");
 	}
 	{
 		object o(1234);
-		assert(o.get<int>(i) == 1234);
+		assert(o.get<int>() == 1234);
 		object o2(o);
-		assert(o2.get<int>(i) == 1234);
+		assert(o2.get<int>() == 1234);
 
 		o = 123;
-		assert(o.get<int>(i) == 123);
+		assert(o.get<int>() == 123);
 	}
 	{
 		object o(1234L);
-		assert(o.get<long>(i) == 1234L);
+		assert(o.get<long>() == 1234L);
 		object o2(o);
-		assert(o2.get<long>(i) == 1234L);
+		assert(o2.get<long>() == 1234L);
 
 		o = 123;
-		assert(o.get<int>(i) == 123);
+		assert(o.get<int>() == 123);
 	}
 	{
 		char s[] = "Ala ma kota";
 		object o(s);
 		assert(std::string(o.get()) == s);
-		assert(std::string(o.get<char const *>(i)) == s);
-		assert(o.get<std::string>(i) == s);
+		assert(std::string(o.get<char const *>()) == s);
+		assert(o.get<std::string>() == s);
 		object o2(o);
 		assert(std::string(o2.get()) == s);
-		assert(std::string(o2.get<char const *>(i)) == s);
-		assert(o2.get<std::string>(i) == s);
+		assert(std::string(o2.get<char const *>()) == s);
+		assert(o2.get<std::string>() == s);
 
 		o = 123;
-		assert(o.get<int>(i) == 123);
+		assert(o.get<int>() == 123);
 	}
 	{
 		std::string s = "Ala ma kota";
 		object o(s);
-		assert(o.get<std::string>(i) == s);
+		assert(o.get<std::string>() == s);
 		object o2(o);
-		assert(o2.get<std::string>(i) == s);
+		assert(o2.get<std::string>() == s);
 
 		o = 123;
-		assert(o.get<int>(i) == 123);
+		assert(o.get<int>() == 123);
 	}
 	{
 		object o1(123);
 		object o2(321);
 		o1.swap(o2);
-		assert(o1.get<int>(i) == 321);
-		assert(o2.get<int>(i) == 123);
+		assert(o1.get<int>() == 321);
+		assert(o2.get<int>() == 123);
 	}
 	{
 		object o(123);
-		assert(o.size(i) == 1);
+		assert(o.size() == 1);
 		o = "Ala ma kota";
-		assert(o.size(i) == 3);
-		assert(o.at(1, i).get<std::string>(i) == "ma");
+		assert(o.size() == 3);
+		assert(o.at(1).get<std::string>() == "ma");
 	}
 	{
 		object o("Ala ma kota");
-		o.append(object("na"), i);
-		o.append(object("punkcie"), i);
-		o.append(object("psa"), i);
-		assert(o.size(i) == 6);
-		assert(o.get<std::string>(i) == "Ala ma kota na punkcie psa");
-		o.replace(2, 1, object("hopla"), i);
-		assert(o.size(i) == 6);
-		assert(o.get<std::string>(i) == "Ala ma hopla na punkcie psa");
+		o.append(object("na"));
+		o.append(object("punkcie"));
+		o.append(object("psa"));
+		assert(o.size() == 6);
+		assert(o.get<std::string>() == "Ala ma kota na punkcie psa");
+		o.replace(2, 1, object("hopla"));
+		assert(o.size() == 6);
+		assert(o.get<std::string>() == "Ala ma hopla na punkcie psa");
 	}
 	{
 		object o = i.eval("set i 17");
-		assert(o.get<int>(i) == 17);
+		assert(o.get<int>() == 17);
 	}
 	{
 		object o("set i 18");
@@ -144,9 +144,9 @@ void test1() {
 	{
 		object o1("malego kota");
 		object o2("ma");
-		o2.append(o1, i); // o2=="ma {malego kota}"
+		o2.append(o1); // o2=="ma {malego kota}"
 		object o3("Ala");
-		o3.append(o2, i); // o3=="Ala {ma {malego kota}}"
+		o3.append(o2); // o3=="Ala {ma {malego kota}}"
 		object o4("list");
 		object o5("set");
 
@@ -173,7 +173,7 @@ void test2() {
 
 	object in("Ala ma kota");
 	object cmd("fun");
-	cmd.append(in, i);
+	cmd.append(in);
 	int ret = i.eval(cmd);
 	assert(ret == 3);
 }
