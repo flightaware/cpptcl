@@ -31,7 +31,7 @@ find_path(TCL_INCLUDE_PATH tcl.h PATHS /usr/local/include/tcl8.6 /usr/local/incl
 find_library(TCL_LIBRARY NAMES tcl8.6 tcl86 PATHS /usr/local/lib)
 find_library(TCL_STUB_LIBRARY NAMES tclstub8.6 tclstub86 PATHS /usr/local/lib)
 
-set(TCL_TCLSH tclsh)
+set(TCL_TCLSH tclsh8.6)
 
 message(INFO " Tcl include ${TCL_INCLUDE_PATH}")
 message(INFO " Tcl library ${TCL_LIBRARY}")
