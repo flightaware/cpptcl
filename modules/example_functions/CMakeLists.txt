@@ -27,12 +27,14 @@ set_target_properties(cpptcl_example_functions PROPERTIES VERSION ${CPPTCL_EXAMP
 find_library(CPPTCL_LIBRARIES cpptcl HINTS ${CPPTCL_SOURCE_DIR}/build)
 find_path (CPPTCL_INCLUDE_DIRS cpptcl/cpptcl.h HINTS "${CPPTCL_SOURCE_DIR}" PATHS ${CMAKE_INCLUDE_PATH})
 
+find_path(TCL_EXECUTABLE_PATH tclsh PATHS /usr/local/bin /usr/bin /bin NO_DEFAULT_PATH)
 find_path(TCL_INCLUDE_PATH tcl.h PATHS /usr/local/include/tcl8.6 /usr/local/include /usr/include/tcl8.6 NO_DEFAULT_PATH)
 find_library(TCL_LIBRARY NAMES tcl8.6 tcl86 PATHS /usr/local/lib)
 find_library(TCL_STUB_LIBRARY NAMES tclstub8.6 tclstub86 PATHS /usr/local/lib)
 
-set(TCL_TCLSH tclsh8.6)
+set(TCL_TCLSH "${TCL_EXECUTABLE_PATH}/tclsh")
 
+message(INFO " Tcl tclsh ${TCL_TCLSH}")
 message(INFO " Tcl include ${TCL_INCLUDE_PATH}")
 message(INFO " Tcl library ${TCL_LIBRARY}")
 message(INFO " Tcl stub library ${TCL_STUB_LIBRARY}")
