@@ -98,16 +98,16 @@ or <code>Tcl_Obj*</code> type when dereferenced.<br>
 4. Non-modifying accessors
 <p>
 <div style="margin-left: 40px;"><code>template &lt;typename T&gt;</code><br>
-<code>T get(interpreter &amp;i) const;</code><br>
+<code>T get(interpreter &amp;i = *interpreter::defaultInterpreter) const;</code><br>
 <code></code><br>
 <code>char const * get()
 const;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 // string get</code><br>
 <code>char const * get(size_t &amp;size) const; // byte array get</code><br>
 <code></code><br>
-<code>size_t length(interpreter &amp;i) const;&nbsp; // returns list
+<code>size_t size(interpreter &amp;i = *interpreter::defaultInterpreter) const;&nbsp; // returns list
 length</code><br>
-<code>object at(interpreter &amp;i, size_t index) const;</code><br>
+<code>object at(size_t index, interpreter &amp;i = *interpreter::defaultInterpreter) const;</code><br>
 <code></code><br>
 <code>Tcl_Obj * get_object() const { return obj_; }</code><br>
 <code></code></div>
@@ -124,6 +124,10 @@ following types:<br>
   <li><code>std::string</code><br>
   </li>
 </ul>
+For ease of use in addition to the <code>get&lt;T&gt;</code> templates there are "asXXX()" chain methods for accessing values with type conversion:
+<code>asString(), asInt(), asBool(), asLong() and asDouble()</code>.
+<br>
+<br>
 5. List-related modifiers<br>
 <br>
 <div style="margin-left: 40px;"><code>object &amp; append(interpreter
@@ -142,7 +146,11 @@ size_t
 count, object const &amp;o);</code><br>
 <code></code></div>
 <br>
-6. Additional helpers<br>
+6. Interpreter helpers<br>
+<br>
+All methods have a default interpreter parameter. TCL is a multiple interpreter platform, but many programs only use a single interpreter.
+The first created interpreter will be cached as the "default interpreter".  This will be provided as a default parameter to get and set methods
+for object types.
 <br>
 <div style="margin-left: 40px;"><code>void set_interp(Tcl_Interp
 *interp);</code><br>
@@ -180,9 +188,9 @@ The following complete program creates the list of numbers, sorts it
 using the Tcl interpreter and prints the results on the console (note:
 this is not the most efficient way to sort numbers in C++!):
 <p>
-<div style="margin-left: 40px;"><code>// example6.cc</code><br>
+<div style="margin-left: 40px;">
 <code></code><br>
-<code>#include "../cpptcl.h"</code><br>
+<code>#include "cpptcl/cpptcl.h"</code><br>
 <code>#include &lt;iostream&gt;</code><br>
 <code></code><br>
 <code>using namespace std;</code><br>
@@ -221,14 +229,14 @@ tab.append(i, object(numbers[indx]));</code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp; }</code><br>
 <code></code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp; cout &lt;&lt; "\n&nbsp; sorted: ";</code><br>
-<code>&nbsp;&nbsp;&nbsp;&nbsp; elems = result.length(i);</code><br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp; elems = result.size();</code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp; for (size_t indx = 0; indx != elems;
 ++indx)</code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp; {</code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; object
-obj(result.at(i, indx));</code><br>
+obj(result.at(indx));</code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int val =
-obj.get&lt;int&gt;(i);</code><br>
+obj.get&lt;int&gt;(); // or obj.asInt() </code><br>
 <code></code><br>
 <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout
 &lt;&lt; val &lt;&lt; ' ';</code><br>
