@@ -1,4 +1,4 @@
-[[prev](classes.md)][[top](index.md)][[next](callpolicies.md)]  
+[[prev](classes.md)][[top](README.md)][[next](callpolicies.md)]  
 
 #### Objects and Lists
 
@@ -200,7 +200,7 @@ After that, the sorting command is composed and executed (as you see, the object
 
 The result of the command is retrieved also in the form of object wrapper, which is used to decompose the resulting list into its elements.
 
-[[prev](classes.md)][[top](index.md)][[next](callpolicies.md)]  
+[[prev](classes.md)][[top](README.md)][[next](callpolicies.md)]  
 
 * * *
 

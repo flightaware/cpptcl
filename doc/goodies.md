@@ -1,4 +1,4 @@
-[[prev](callpolicies.md)][[top](index.md)][[next](errors.md)]  
+[[prev](callpolicies.md)][[top](README.md)][[next](errors.md)]  
 
 #### Various Goodies  
 
@@ -79,7 +79,7 @@ i1.create_alias("fun", i2, "otherFun");
 
 The above instruction creates an alias in the interpreter i1, so that whenever the fun command is invoked in it, it will forward the call to the second interpreter, to the otherFun command.  
 
-[[prev](callpolicies.md)][[top](index.md)][[next](errors.md)]  
+[[prev](callpolicies.md)][[top](README.md)][[next](errors.md)]  
 
 * * *
 

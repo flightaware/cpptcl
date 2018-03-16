@@ -1,4 +1,4 @@
-[[prev](errors.md)][[top](index.md)]  
+[[prev](errors.md)][[top](README.md)]  
 
 #### Compiling  
 
@@ -31,7 +31,7 @@ For dynamic linkage use `-lcpptcl`. The dynamic library for cpptcl will not crea
 
 The test code, in the test directory, provides the best examples of using the C++/TCL library. The tests include TCL interpreter creation and TCL extension creation.  
 
-[[prev](errors.md)][[top](index.md)]  
+[[prev](errors.md)][[top](README.md)]  
 
 * * *
 

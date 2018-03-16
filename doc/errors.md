@@ -1,4 +1,4 @@
-[[prev](goodies.md)][[top](index.md)][[next](compiling.md)]  
+[[prev](goodies.md)][[top](README.md)][[next](compiling.md)]  
 
 #### Error Handling  
 
@@ -37,7 +37,7 @@ int main()
 
 On the other hand, when calling C++ from Tcl, all C++ exceptions are translated and presented as regular Tcl errors, with error message taken from the C++ exception, if it was from the std::exception family. For all other C++ exceptions, the "Unknown error." message is returned.
 
-[[prev](goodies.md)][[top](index.md)][[next](compiling.md)]  
+[[prev](goodies.md)][[top](README.md)][[next](compiling.md)]  
 
 * * *
 

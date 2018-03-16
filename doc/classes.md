@@ -1,4 +1,4 @@
-[[prev](freefun.md)][[top](index.md)][[next](objects.md)]  
+[[prev](freefun.md)][[top](README.md)][[next](objects.md)]  
 
 #### Exposing Classes  
 
@@ -181,7 +181,7 @@ invalid command name "p0x807b790"
 %  
 ```
 
-[[prev](freefun.md)][[top](index.md)][[next](objects.md)]  
+[[prev](freefun.md)][[top](README.md)][[next](objects.md)]  
 
 * * *
 

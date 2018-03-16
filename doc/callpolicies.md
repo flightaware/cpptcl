@@ -1,4 +1,4 @@
-[[prev](objects.md)][[top](index.md)][[next](goodies.md)]  
+[[prev](objects.md)][[top](README.md)][[next](goodies.md)]  
 
 #### Call Policies
 
@@ -311,7 +311,7 @@ This module can be used from the Tcl interpreter like here:
 %  
 ```
 
-[[prev](objects.md)][[top](index.md)][[next](goodies.md)]  
+[[prev](objects.md)][[top](README.md)][[next](goodies.md)]  
 
 * * *
 

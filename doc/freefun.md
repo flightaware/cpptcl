@@ -1,4 +1,4 @@
-[[prev](quickstart.md)][[top](index.md)][[next](classes.md)]  
+[[prev](quickstart.md)][[top](README.md)][[next](classes.md)]  
 
 #### Exposing Free Functions  
 
@@ -71,7 +71,7 @@ In addition, the parameter of the function can be of type T const &, where T is 
 
 This means that only <span style="font-style: italic;">input</span> parameters are supported (this may change in future versions of the libray).
 
-[[prev](quickstart.md)][[top](index.md)][[next](classes.md)]  
+[[prev](quickstart.md)][[top](README.md)][[next](classes.md)]  
 
 * * *
 
