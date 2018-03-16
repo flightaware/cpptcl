@@ -1,5 +1,4 @@
-  
-[[prev](quickstart.html)][[top](index.html)][[next](classes.html)]  
+[[prev](quickstart.md)][[top](index.md)][[next](classes.md)]  
 
 #### Exposing Free Functions  
 
@@ -7,41 +6,47 @@ You have already seen an example of how to expose a free C++ function to the Tcl
 
 No matter whether you write an extension module or embed Tcl in a C++ application, the way to expose a free function is alway the same:
 
-<div style="margin-left: 40px;">`i.def("tcl_function_name", cpp_function_name);`  
-</div>
+```
+i.def("tcl_function_name", cpp_function_name);  
+```
 
-...where `i` is the name of the interpreter object.
+...where i is the name of the interpreter object.
 
-In the above example, the `"tcl_function_name"` is a name that will be visible to Tcl scripts, and the `cpp_function_name` is a name of (or a pointer to) the function in the C++ code to implement it.
+In the above example, the "tcl_function_name" is a name that will be visible to Tcl scripts, and the cpp_function_name is a name of (or a pointer to) the function in the C++ code to implement it.
 
-They do not have to be the same, although this is the usual practice, like in the [Quick Start](quickstart.html) examples:
+They do not have to be the same, although this is the usual practice, like in the [Quick Start](quickstart.md) examples:
 
-<div style="margin-left: 40px;">`i.def("hello", hello);`  
-</div>
+```
+i.def("hello", hello);  
+```
 
 Suppose that we want to expose the following C++ function:
 
-<div style="margin-left: 40px;">`int sum(int a, int b)  
+```
+int sum(int a, int b)  
 {  
      return a + b;  
-}`  
-</div>
+}  
+```
 
 We can define it in the interpreter like this:
 
-<div style="margin-left: 40px;">`i.def("<span style="font-weight: bold;">add</span>", sum);`  
-`i.def("<span style="font-weight: bold;">+</span>", sum);`  
-</div>
+```
+i.def("<span style="font-weight: bold;">add</span>", sum);  
+i.def("<span style="font-weight: bold;">+</span>", sum);  
+```
 
-so that we can call the `sum` function from Tcl like this:
+so that we can call the sum function from Tcl like this:
 
-<div style="margin-left: 40px;">`add 3 4`  
-</div>
+```
+add 3 4  
+```
 
 or:
 
-<div style="margin-left: 40px;">`+ 3 4`  
-</div>
+```
++ 3 4  
+```
 
 As you can see, the same function can be defined in the interpreter multiple times with different Tcl names.
 
@@ -60,13 +65,13 @@ At the moment, parameters and the return value of exposed functions can have the
 *   bool,
 *   double,
 *   pointer to arbitrary type
-*   [object](objects.html)  
+*   [object](objects.md)  
 
-In addition, the parameter of the function can be of type `T const &`, where T is any of the above.
+In addition, the parameter of the function can be of type T const &, where T is any of the above.
 
 This means that only <span style="font-style: italic;">input</span> parameters are supported (this may change in future versions of the libray).
 
-[[prev](quickstart.html)][[top](index.html)][[next](classes.html)]  
+[[prev](quickstart.md)][[top](index.md)][[next](classes.md)]  
 
 * * *
 

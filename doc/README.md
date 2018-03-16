@@ -15,31 +15,31 @@ C++/Tcl provides the following features:
 *   The ability to define classes and class member functions and make them accessible from Tcl in a manner similar to [SWIG](http://www.swig.org/) wrappers.
 *   The ability to manipulate Tcl lists and objects from C++.  
 
-[Quick Start](quickstart.html)  
+[Quick Start](quickstart.md)  
 
-[Extending Tcl by C++ module](quickstart.html#extending)  
-[Embedding Tcl in C++ program](quickstart.html#embedding)  
+[Extending Tcl by C++ module](quickstart.md#extending)  
+[Embedding Tcl in C++ program](quickstart.md#embedding)  
 
-[Exposing Free Functions](freefun.html)  
-[Exposing Classes](classes.html)  
+[Exposing Free Functions](freefun.md)  
+[Exposing Classes](classes.md)  
 
-[Member functions](classes.html#members)  
-[Constructors](classes.html#constructors)  
-[Destructors](classes.html#destructors)  
+[Member functions](classes.md#members)  
+[Constructors](classes.md#constructors)  
+[Destructors](classes.md#destructors)  
 
-[Objects and Lists](objects.html)  
-[Call Policies](callpolicies.html)  
+[Objects and Lists](objects.md)  
+[Call Policies](callpolicies.md)  
 
-[Factories and sinks](callpolicies.html#factories)  
-[Variadic functions](callpolicies.html#variadic)  
+[Factories and sinks](callpolicies.md#factories)  
+[Variadic functions](callpolicies.md#variadic)  
 
-[Various Goodies](goodies.html)  
+[Various Goodies](goodies.md)  
 
-[Package support](goodies.html#packages)  
-[Stream evaluation](goodies.html#streameval)  
-[Tcl Namespaces](goodies.html#namespaces)  
-[Safe Tcl Interpreters](goodies.html#safe)  
-[Aliasing](goodies.html#aliasing)  
+[Package support](goodies.md#packages)  
+[Stream evaluation](goodies.md#streameval)  
+[Tcl Namespaces](goodies.md#namespaces)  
+[Safe Tcl Interpreters](goodies.md#safe)  
+[Aliasing](goodies.md#aliasing)  
 
 [Errors](errors.html)  
 [Compiling](compiling.html)  
@@ -48,4 +48,4 @@ C++/Tcl provides the following features:
 
 Copyright © 2004-2006, Maciej Sobczak
 ***
-Copyright © 2018 FlightAware LLC
+Copyright © 2018, FlightAware LLC

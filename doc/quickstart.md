@@ -1,4 +1,4 @@
-[[top](index.html)][[next](freefun.html)]  
+[[top](index.md)][[next](freefun.md)]  
 
 #### Quick Start
 
@@ -88,7 +88,7 @@ In our main routine we created a Tcl interpreter as a C++ object and manipulated
 
 Pretty cool.
 
-[[top](index.html)][[next](freefun.html)]  
+[[top](index.md)][[next](freefun.md)]  
 
 * * *
 
