@@ -184,7 +184,7 @@ i.def("create", create, factory("ClassA").sink(2).sink(4));
 
 As you see, policies can be chained. Their order is not important, apart from the fact that the factory policy can be related to only one class, so it is the last factory policy in the chain that is effective.  
 
-*Variadic functions*
+*** <a name="variadic"></a> Variadic functions
 
 Another thing that can be controlled from policies is whether the function is variadic (whether it can accept variable number of arguments) or not.
 

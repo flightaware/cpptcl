@@ -41,8 +41,8 @@ C++/Tcl provides the following features:
 [Safe Tcl Interpreters](goodies.md#safe)  
 [Aliasing](goodies.md#aliasing)  
 
-[Errors](errors.html)  
-[Compiling](compiling.html)  
+[Errors](errors.md)  
+[Compiling](compiling.md)  
 
 ***
 
