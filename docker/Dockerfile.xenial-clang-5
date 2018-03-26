@@ -1,0 +1,26 @@
+FROM ubuntu:xenial
+
+RUN apt-get update -qq
+RUN apt-get install -y wget software-properties-common git
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+RUN apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-5.0 main"
+# This may skip archives which is ok, but the return code will be 100
+RUN apt-get update -qq || exit 0
+RUN apt-get install -y clang-5.0 libc++-dev tcl-dev
+
+# Build cmake from source
+RUN mkdir -p /root/git && cd /root/git && \
+    wget https://cmake.org/files/v3.10/cmake-3.10.3.tar.gz && \
+    tar -xzf cmake-3.10.3.tar.gz && \
+    cd cmake-3.10.3 && ./bootstrap && \
+    make && make install && \
+    cmake --version
+
+# Build cpptcl with clang++-5.0
+RUN cd /root/git && \
+    git clone https://github.com/flightaware/cpptcl.git && \
+    cd cpptcl && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_CXX_COMPILER=clang++-5.0 -DCMAKE_C_COMPILER=clang-5.0 .. && \
+    make && \
+    cd .. && make test
