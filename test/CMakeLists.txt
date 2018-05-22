@@ -60,6 +60,10 @@ add_executable(test6 test6.cc ../cpptcl.cc)
 add_test(test6 test6)
 target_link_libraries(test6 PUBLIC ${TCL_LIBRARY} ${TCL_STUB_LIBRARY})
 
+add_executable(test7 test7.cc ../cpptcl.cc)
+add_test(test7 test7)
+target_link_libraries(test7 PUBLIC ${TCL_LIBRARY} ${TCL_STUB_LIBRARY})
+
 add_executable(test_main test_main.cc ../cpptcl.cc)
 add_test(test_main test_main)
 target_link_libraries(test_main PUBLIC ${TCL_LIBRARY} ${TCL_STUB_LIBRARY})
