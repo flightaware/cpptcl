@@ -356,7 +356,7 @@ policies &policies::variadic() {
 }
 
 policies &policies::usage(string const &message) {
-	usage_ = message;
+	usage_ = std::string("Usage: ") + message;
 	return *this;
 }
 
