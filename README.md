@@ -10,7 +10,7 @@ Tcl developers can use C++ to create high performance code that leverages all of
 
 Likewise 
 
-[cpptcl documentation](https://rawgit.com/flightaware/cpptcl/master/doc/index.html)
+[cpptcl documentation](https://github.com/flightaware/cpptcl/tree/master/doc)
 
 Copyright (C) 2004-2006, Maciej Sobczak
 Copyright (C) 2017-2018, FlightAware LLC
