@@ -43,7 +43,7 @@ class tcl_error : public std::runtime_error {
 // call policies
 
 struct policies {
-	policies() : variadic_(false) {}
+	policies() : variadic_(false), usage_("Too few arguments.") {}
 
 	policies &factory(std::string const &name);
 
@@ -52,15 +52,19 @@ struct policies {
 
 	policies &variadic();
 
+	policies &usage(std::string const &message);
+
 	std::string factory_;
 	std::vector<int> sinks_;
 	bool variadic_;
+	std::string usage_;
 };
 
 // syntax short-cuts
 policies factory(std::string const &name);
 policies sink(int index);
 policies variadic();
+policies usage(std::string const &message);
 
 class interpreter;
 class object;
@@ -101,7 +105,7 @@ void set_result(Tcl_Interp *interp, object const &o);
 
 // helper for checking for required number of parameters
 // (throws tcl_error when not met)
-void check_params_no(int objc, int required);
+void check_params_no(int objc, int required, const std::string &message);
 
 // helper for gathering optional params in variadic functions
 object get_var_params(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], int from, policies const &pol);
@@ -151,7 +155,7 @@ template <class C> class class_handler : public class_handler_base {
 		C *p = static_cast<C *>(pv);
 
 		if (objc < 2) {
-			throw tcl_error("Too few arguments.");
+			throw tcl_error(pol.usage_);
 		}
 
 		std::string methodName(Tcl_GetString(objv[1]));

@@ -97,9 +97,9 @@ void details::set_result(Tcl_Interp *interp, void *p) {
 
 void details::set_result(Tcl_Interp *interp, object const &o) { Tcl_SetObjResult(interp, o.get_object()); }
 
-void details::check_params_no(int objc, int required) {
+void details::check_params_no(int objc, int required, const std::string &message) {
 	if (objc < required) {
-		throw tcl_error("Too few arguments.");
+		throw tcl_error(message);
 	}
 }
 
@@ -107,10 +107,10 @@ object details::get_var_params(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv
 	object o;
 
 	if (pol.variadic_) {
-		check_params_no(objc, from);
+		check_params_no(objc, from, pol.usage_);
 		o.assign(objv + from, objv + objc);
 	} else {
-		check_params_no(objc, from + 1);
+		check_params_no(objc, from + 1, pol.usage_);
 		o.assign(objv[from]);
 	}
 
@@ -355,11 +355,18 @@ policies &policies::variadic() {
 	return *this;
 }
 
+policies &policies::usage(string const &message) {
+	usage_ = message;
+	return *this;
+}
+
 policies Tcl::factory(string const &name) { return policies().factory(name); }
 
 policies Tcl::sink(int index) { return policies().sink(index); }
 
 policies Tcl::variadic() { return policies().variadic(); }
+
+policies Tcl::usage(string const &message) { return policies().usage(message); }
 
 class_handler_base::class_handler_base() {
 	// default policies for the -delete command
