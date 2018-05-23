@@ -91,9 +91,9 @@ In the above example, the class Person only has a contructor without parameters.
 The Person class could be exposed also in the following way:
 
 ```
-i.class_<Person>("Person", <span style="font-weight: bold;">init<>()</span>)  
+i.class_<Person>("Person", init<>())  
      .def("setName", &Person::setName)  
-     .def("getName", &Person::getName)<span style="font-family: sans-serif;">;</span>  
+     .def("getName", &Person::getName);  
 ```
 
 In the above example there is a special init object provided. It can carry information about the expected parameters that are needed for constructor, as in the following complete example:
@@ -110,7 +110,7 @@ using namespace Tcl;
 class Person  
 {  
 public:  
-     <span style="font-weight: bold;">Person(string const &n) : name(n) {}</span>  
+     Person(string const &n) : name(n) {}  
 
      void setName(string const &n) { name = n; }  
      string getName() { return name; }  
@@ -121,7 +121,7 @@ private:
 
 CPPTCL_MODULE(Mymodule, i)  
 {  
-     i.class_<Person>("Person", <span style="font-weight: bold;">init<string const &>()</span>)  
+     i.class_<Person>("Person", init<string const &>())  
           .def("setName", &Person::setName)  
           .def("getName", &Person::getName);  
 }  
@@ -154,7 +154,7 @@ Constructors with up to nine parameters can be defined this way. (This limitatio
 Another form that may sometimes be useful is:
 
 ```
-i.class_<Person>("Person", <span style="font-weight: bold;">no_init</span>)  
+i.class_<Person>("Person", no_init)  
      .def("setName", &Person::setName)  
      .def("getName", &Person::getName);  
 ```
