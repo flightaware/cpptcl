@@ -11,6 +11,7 @@
 #define CPPTCL_NO_TCL_STUBS
 #include "cpptcl/cpptcl.h"
 #include <iostream>
+#undef NDEBUG
 #include <assert.h>
 
 using namespace Tcl;

@@ -79,6 +79,22 @@ i1.create_alias("fun", i2, "otherFun");
 
 The above instruction creates an alias in the interpreter i1, so that whenever the fun command is invoked in it, it will forward the call to the second interpreter, to the otherFun command.  
 
+#### <a name="usage">Usage messages</a>
+
+Normally when you provide too few arguments to a command, you get an uninformative error message `Too few arguments.`. You can provide, alternatively,
+a usage() parameter to def():
+
+```
+i.def("slick_search", slick_search, usage("slick_search boxset lat lon"));
+```
+
+Now if you call "slick_search" with too few parameters, you will get the error "Usage: slick_search boxset lat lon".
+
+This is implemented as a policy function, and does not interfere with other policy arguments:
+```
+i.def("slick_close", slick_close, sink(1).usage("slick_close handle"));
+```
+
 [[prev](callpolicies.md)][[top](README.md)][[next](errors.md)]  
 
 * * *
