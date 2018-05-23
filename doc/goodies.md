@@ -85,6 +85,9 @@ Normally when you provide too few arguments to a command, you get an uninformati
 a usage() parameter to def():
 
 ```
+using namespace Tcl;
+//...
+
 i.def("slick_search", slick_search, usage("slick_search boxset lat lon"));
 ```
 
@@ -92,6 +95,9 @@ Now if you call "slick_search" with too few parameters, you will get the error "
 
 This is implemented as a policy function, and does not interfere with other policy arguments:
 ```
+using namespace Tcl;
+//...
+
 i.def("slick_close", slick_close, sink(1).usage("slick_close handle"));
 ```
 
