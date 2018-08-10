@@ -13,13 +13,13 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cp /usr/local/opt/tcl-tk/lib/libtcl* /usr/local/lib; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ln -s /usr/local/opt/tcl-tk/bin/tclsh8.6 /usr/local/bin/tclsh; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ln -s /usr/local/opt/tcl-tk/bin/tclsh8.6 /usr/local/bin/tclsh8.6; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then apt-get update -qq; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then apt-get install -y gcc-7 g++-7; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 70 --slave /usr/bin/g++ g++ /usr/bin/g++-7; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then apt-get install -y tcl8.6-dev; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y gcc-7 g++-7; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 70 --slave /usr/bin/g++ g++ /usr/bin/g++-7; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y tcl8.6-dev; fi
   
 script:
   - make
-  - make install
+  - sudo make install
   - make test
