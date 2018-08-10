@@ -3,7 +3,9 @@
 #include <iostream>
 #include <string>
 
+
 #include "tcl.h"
+#define CPPTCL_NO_TCL_STUBS
 #include "cpptcl/cpptcl.h"
 
 using namespace std;
