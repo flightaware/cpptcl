@@ -11,6 +11,14 @@
 #ifndef CPPTCL_INCLUDED
 #define CPPTCL_INCLUDED
 
+#ifdef _TCL
+#ifndef USE_TCL_STUBS
+#ifndef CPPTCL_NO_TCL_STUBS
+#error "tcl.h header included before cpptcl.h.  Either set USE_TCL_STUBS or set CPPTCL_NO_TCL_STUBS if creating a TCL interpreter."
+#endif
+#endif
+#endif
+
 #include <functional>
 #include <map>
 #include <memory>
