@@ -121,12 +121,12 @@ void killPerson(Person *p)
 CPPTCL_MODULE(Mymodule, i)  
 {  
      // note that the Person class is exposed without any constructor  
-     i.class_<Person>("Person", <span style="font-weight: bold;">no_init</span>)  
+     i.class_<Person>("Person", no_init)  
           .def("setName", &Person::setName)  
           .def("getName", &Person::getName);  
 
-     i.def("makePerson", makePerson, <span style="font-weight: bold;">factory("Person")</span>);  
-     i.def("killPerson", killPerson, <span style="font-weight: bold;">sink(1)</span>);  
+     i.def("makePerson", makePerson, factory("Person"));  
+     i.def("killPerson", killPerson, sink(1));  
 }  
 ```
 
@@ -218,10 +218,10 @@ If more arguments are provided, they are discarded. If less, an error is reporte
 Now, consider the following change:
 
 ```
-void fun(int a, int b, <span style="font-weight: bold;">object const &c</span>);  
+void fun(int a, int b, object const &c);  
 
 // later:  
-i.def("fun", fun, <span style="font-weight: bold;">variadic()</span>);  
+i.def("fun", fun, variadic());  
 ```
 
 With the variadic() policy, the function will accept:  
@@ -236,12 +236,12 @@ Similarly, a constructor with variable list of parameters may be defined as:
 class MyClass  
 {  
 public:  
-    MyClass(int a, <span style="font-weight: bold;">object const &b</span>);  
+    MyClass(int a, object const &b);  
     void fun();  
 };  
 
 // later:  
-i.class_<MyClass>("MyClass", init<int, <span style="font-weight: bold;">object const &</span>>(), <span style="font-weight: bold;">variadic()</span>)  
+i.class_<MyClass>("MyClass", init<int, object const &>(), variadic())  
     .def("fun", &MyClass::fun);  
 ```
 
@@ -255,12 +255,12 @@ Of course, the variadic class methods can be defined in the same way:
 class MyClass  
 {  
 public:  
-    void fun(<span style="font-weight: bold;">object const &a</span>);  
+    void fun(object const &a);  
 };  
 
 // later:  
 i.class_<MyClass>("MyClass")  
-    .def("fun", &MyClass::fun, <span style="font-weight: bold;">variadic()</span>);  
+    .def("fun", &MyClass::fun, variadic());  
 ```
 
 As you see, the special, last parameter may be the only one, or preceded by any number of "normal" parameters.
