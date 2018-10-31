@@ -71,12 +71,13 @@ template <class C, typename R, typename T1, typename T2> class method2 : public 
 
 	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
 		check_params_no(objc, 4, pol.usage_);
+		tcl_cast_by_reference<T1> byRef;
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2>(interp, std::bind(cf_, p, _1, _2), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]));
+			dispatch<R>::template do_dispatch<T1, T2>(interp, std::bind(cf_, p, _1, _2), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value));
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2>(interp, std::bind(f_, p, _1, _2), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]));
+			dispatch<R>::template do_dispatch<T1, T2>(interp, std::bind(f_, p, _1, _2), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value));
 		}
 	}
 
@@ -96,12 +97,13 @@ template <class C, typename R, typename T1, typename T2, typename T3> class meth
 
 	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
 		check_params_no(objc, 5, pol.usage_);
+		tcl_cast_by_reference<T1> byRef;
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3>(interp, std::bind(cf_, p, _1, _2, _3), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]));
+			dispatch<R>::template do_dispatch<T1, T2, T3>(interp, std::bind(cf_, p, _1, _2, _3), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value));
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3>(interp, std::bind(f_, p, _1, _2, _3), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]));
+			dispatch<R>::template do_dispatch<T1, T2, T3>(interp, std::bind(f_, p, _1, _2, _3), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value));
 		}
 	}
 
@@ -121,12 +123,13 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 
 	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
 		check_params_no(objc, 6, pol.usage_);
+		tcl_cast_by_reference<T1> byRef;
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4>(interp, std::bind(cf_, p, _1, _2, _3, _4), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4>(interp, std::bind(cf_, p, _1, _2, _3, _4), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value));
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4>(interp, std::bind(f_, p, _1, _2, _3, _4), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4>(interp, std::bind(f_, p, _1, _2, _3, _4), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value));
 		}
 	}
 
@@ -146,12 +149,13 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 
 	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
 		check_params_no(objc, 7, pol.usage_);
+		tcl_cast_by_reference<T1> byRef;
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value), tcl_cast<T5>::from(interp, objv[6], byRef.value));
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5>(interp, std::bind(f_, p, _1, _2, _3, _4, _5), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5>(interp, std::bind(f_, p, _1, _2, _3, _4, _5), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value), tcl_cast<T5>::from(interp, objv[6], byRef.value));
 		}
 	}
 
@@ -171,12 +175,13 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 
 	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
 		check_params_no(objc, 8, pol.usage_);
+		tcl_cast_by_reference<T1> byRef;
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value), tcl_cast<T5>::from(interp, objv[6], byRef.value), tcl_cast<T6>::from(interp, objv[7], byRef.value));
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value), tcl_cast<T5>::from(interp, objv[6], byRef.value), tcl_cast<T6>::from(interp, objv[7], byRef.value));
 		}
 	}
 
@@ -196,12 +201,13 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 
 	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
 		check_params_no(objc, 9, pol.usage_);
+		tcl_cast_by_reference<T1> byRef;
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6, _7), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6, _7), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value), tcl_cast<T5>::from(interp, objv[6], byRef.value), tcl_cast<T6>::from(interp, objv[7], byRef.value), tcl_cast<T7>::from(interp, objv[8], byRef.value));
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6, _7), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6, _7), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value), tcl_cast<T5>::from(interp, objv[6], byRef.value), tcl_cast<T6>::from(interp, objv[7], byRef.value), tcl_cast<T7>::from(interp, objv[8], byRef.value));
 		}
 	}
 
@@ -221,12 +227,13 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 
 	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
 		check_params_no(objc, 10, pol.usage_);
+		tcl_cast_by_reference<T1> byRef;
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6, _7, _8), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), tcl_cast<T8>::from(interp, objv[9]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6, _7, _8), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value), tcl_cast<T5>::from(interp, objv[6], byRef.value), tcl_cast<T6>::from(interp, objv[7], byRef.value), tcl_cast<T7>::from(interp, objv[8], byRef.value), tcl_cast<T8>::from(interp, objv[9], byRef.value));
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6, _7, _8), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), tcl_cast<T8>::from(interp, objv[9]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6, _7, _8), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value), tcl_cast<T5>::from(interp, objv[6], byRef.value), tcl_cast<T6>::from(interp, objv[7], byRef.value), tcl_cast<T7>::from(interp, objv[8], byRef.value), tcl_cast<T8>::from(interp, objv[9], byRef.value));
 		}
 	}
 
@@ -246,12 +253,13 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 
 	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
 		check_params_no(objc, 11, pol.usage_);
+		tcl_cast_by_reference<T1> byRef;
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8, T9>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6, _7, _8, _9), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), tcl_cast<T8>::from(interp, objv[9]), tcl_cast<T9>::from(interp, objv[10]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8, T9>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6, _7, _8, _9), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value), tcl_cast<T5>::from(interp, objv[6], byRef.value), tcl_cast<T6>::from(interp, objv[7], byRef.value), tcl_cast<T7>::from(interp, objv[8], byRef.value), tcl_cast<T8>::from(interp, objv[9], byRef.value), tcl_cast<T9>::from(interp, objv[10], byRef.value));
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8, T9>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6, _7, _8, _9), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), tcl_cast<T8>::from(interp, objv[9]), tcl_cast<T9>::from(interp, objv[10]));
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8, T9>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6, _7, _8, _9), tcl_cast<T1>::from(interp, objv[2], byRef.value), tcl_cast<T2>::from(interp, objv[3], byRef.value), tcl_cast<T3>::from(interp, objv[4], byRef.value), tcl_cast<T4>::from(interp, objv[5], byRef.value), tcl_cast<T5>::from(interp, objv[6], byRef.value), tcl_cast<T6>::from(interp, objv[7], byRef.value), tcl_cast<T7>::from(interp, objv[8], byRef.value), tcl_cast<T8>::from(interp, objv[9], byRef.value), tcl_cast<T9>::from(interp, objv[10], byRef.value));
 		}
 	}
 
