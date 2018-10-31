@@ -19,7 +19,7 @@ template <typename R> class callback0 : public callback_base {
   public:
 	callback0(functor_type f) : f_(f) {}
 
-	virtual void invoke(Tcl_Interp *interp, int, Tcl_Obj *CONST[], policies const &) { dispatch<R>::do_dispatch(interp, f_); }
+	virtual void invoke(Tcl_Interp *interp, int, Tcl_Obj *CONST[], policies const &pol) { dispatch<R>::do_dispatch(interp, f_); }
 
   private:
 	functor_type f_;
@@ -31,8 +31,8 @@ template <typename R, typename T1> class callback1 : public callback_base {
   public:
 	callback1(functor_type f) : f_(f) {}
 
-	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 2);
+	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 2, pol.usage_);
 		tcl_cast_by_reference<T1> byRef1;
 		dispatch<R>::template do_dispatch<T1>(interp, f_, tcl_cast<T1>::from(interp, objv[1], byRef1.value));
 	}
@@ -47,8 +47,8 @@ template <typename R, typename T1, typename T2> class callback2 : public callbac
   public:
 	callback2(functor_type f) : f_(f) {}
 
-	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 3);
+	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 3, pol.usage_);
 		tcl_cast_by_reference<T1> byRef1;
 		tcl_cast_by_reference<T2> byRef2;
 
@@ -65,8 +65,8 @@ template <typename R, typename T1, typename T2, typename T3> class callback3 : p
   public:
 	callback3(functor_type f) : f_(f) {}
 
-	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 4);
+	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 4, pol.usage_);
 		tcl_cast_by_reference<T1> byRef1;
 		tcl_cast_by_reference<T2> byRef2;
 		tcl_cast_by_reference<T3> byRef3;
@@ -84,8 +84,8 @@ template <typename R, typename T1, typename T2, typename T3, typename T4> class 
   public:
 	callback4(functor_type f) : f_(f) {}
 
-	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 5);
+	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 5, pol.usage_);
 		tcl_cast_by_reference<T1> byRef1;
 		tcl_cast_by_reference<T2> byRef2;
 		tcl_cast_by_reference<T3> byRef3;
@@ -109,8 +109,8 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
 	tcl_cast_by_reference<T4> byRef4;
 	tcl_cast_by_reference<T5> byRef5;
 
-	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 6);
+	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 6, pol.usage_);
 
 		dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5>(interp, f_, tcl_cast<T1>::from(interp, objv[1], byRef1.value), tcl_cast<T2>::from(interp, objv[2], byRef2.value), tcl_cast<T3>::from(interp, objv[3], byRef3.value), tcl_cast<T4>::from(interp, objv[4], byRef4.value), tcl_cast<T5>::from(interp, objv[5], byRef5.value));
 	}
@@ -125,8 +125,8 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
   public:
 	callback6(functor_type f) : f_(f) {}
 
-	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 7);
+	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 7, pol.usage_);
 		tcl_cast_by_reference<T1> byRef1;
 		tcl_cast_by_reference<T2> byRef2;
 		tcl_cast_by_reference<T3> byRef3;
@@ -147,8 +147,8 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
   public:
 	callback7(functor_type f) : f_(f) {}
 
-	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 8);
+	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 8, pol.usage_);
 		tcl_cast_by_reference<T1> byRef1;
 		tcl_cast_by_reference<T2> byRef2;
 		tcl_cast_by_reference<T3> byRef3;
@@ -170,8 +170,8 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
   public:
 	callback8(functor_type f) : f_(f) {}
 
-	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 9);
+	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 9, pol.usage_);
 		tcl_cast_by_reference<T1> byRef1;
 		tcl_cast_by_reference<T2> byRef2;
 		tcl_cast_by_reference<T3> byRef3;
@@ -194,8 +194,8 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
   public:
 	callback9(functor_type f) : f_(f) {}
 
-	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 10);
+	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 10, pol.usage_);
 		tcl_cast_by_reference<T1> byRef1;
 		tcl_cast_by_reference<T2> byRef2;
 		tcl_cast_by_reference<T3> byRef3;

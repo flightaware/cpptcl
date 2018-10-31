@@ -43,8 +43,8 @@ template <class C, typename R, typename T1> class method1 : public object_cmd_ba
 	method1(mem_type f) : f_(f), cmem_(false) {}
 	method1(cmem_type f) : cf_(f), cmem_(true) {}
 
-	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 3);
+	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 3, pol.usage_);
 		tcl_cast_by_reference<T1> byRef;
 
 		C *p = static_cast<C *>(pv);
@@ -69,8 +69,8 @@ template <class C, typename R, typename T1, typename T2> class method2 : public 
 	method2(mem_type f) : f_(f), cmem_(false) {}
 	method2(cmem_type f) : cf_(f), cmem_(true) {}
 
-	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 4);
+	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 4, pol.usage_);
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
@@ -94,8 +94,8 @@ template <class C, typename R, typename T1, typename T2, typename T3> class meth
 	method3(mem_type f) : f_(f), cmem_(false) {}
 	method3(cmem_type f) : cf_(f), cmem_(true) {}
 
-	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 5);
+	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 5, pol.usage_);
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
@@ -119,8 +119,8 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 	method4(mem_type f) : f_(f), cmem_(false) {}
 	method4(cmem_type f) : cf_(f), cmem_(true) {}
 
-	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 6);
+	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 6, pol.usage_);
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
@@ -144,8 +144,8 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 	method5(mem_type f) : f_(f), cmem_(false) {}
 	method5(cmem_type f) : cf_(f), cmem_(true) {}
 
-	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 7);
+	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 7, pol.usage_);
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
@@ -169,8 +169,8 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 	method6(mem_type f) : f_(f), cmem_(false) {}
 	method6(cmem_type f) : cf_(f), cmem_(true) {}
 
-	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 8);
+	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 8, pol.usage_);
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
@@ -194,8 +194,8 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 	method7(mem_type f) : f_(f), cmem_(false) {}
 	method7(cmem_type f) : cf_(f), cmem_(true) {}
 
-	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 9);
+	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 9, pol.usage_);
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
@@ -219,8 +219,8 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 	method8(mem_type f) : f_(f), cmem_(false) {}
 	method8(cmem_type f) : cf_(f), cmem_(true) {}
 
-	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 10);
+	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 10, pol.usage_);
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {
@@ -244,8 +244,8 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 	method9(mem_type f) : f_(f), cmem_(false) {}
 	method9(cmem_type f) : cf_(f), cmem_(true) {}
 
-	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &) {
-		check_params_no(objc, 11);
+	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) {
+		check_params_no(objc, 11, pol.usage_);
 
 		C *p = static_cast<C *>(pv);
 		if (cmem_) {

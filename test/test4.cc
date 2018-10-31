@@ -12,8 +12,9 @@
 #include "../cpptcl/cpptcl.h"
 #include <cmath>
 #include <iostream>
-#include <assert.h>
 #include <string.h>
+#undef NDEBUG
+#include <assert.h>
 
 using namespace Tcl;
 
