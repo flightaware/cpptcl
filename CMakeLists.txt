@@ -64,6 +64,4 @@ install(TARGETS cpptcl_static ARCHIVE DESTINATION lib)
 install(FILES ${HDRS} DESTINATION include/cpptcl)
 install(FILES ${HDRS_DETAILS} DESTINATION include/cpptcl/details)
 
-add_executable(cpptcl_test test/test_main.cc)
-add_test(test1 cpptcl_test)
-target_link_libraries(cpptcl_test PUBLIC cpptcl ${TCL_LIBRARY} ${TCL_STUB_LIBRARY})
+add_subdirectory(test)
