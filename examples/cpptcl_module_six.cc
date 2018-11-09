@@ -1,4 +1,4 @@
-#include "../cpptcl.h"
+#include "cpptcl/cpptcl.h"
 
 using namespace Tcl;
 

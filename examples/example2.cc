@@ -15,6 +15,7 @@ void hello() { cout << "Hello C++/Tcl!" << endl; }
 
 int main() {
 	Tcl_Interp * interp = Tcl_CreateInterp();
+	Tcl_InitStubs(interp, "8.0", 0);
 	interpreter i(interp, true);
 	i.def("hello", hello);
 

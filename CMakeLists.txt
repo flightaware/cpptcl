@@ -65,3 +65,4 @@ install(FILES ${HDRS} DESTINATION include/cpptcl)
 install(FILES ${HDRS_DETAILS} DESTINATION include/cpptcl/details)
 
 add_subdirectory(test)
+add_subdirectory(examples)
