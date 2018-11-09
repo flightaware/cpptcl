@@ -1,48 +1,59 @@
 cmake_minimum_required(VERSION 3.0)
 
-if (NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux") 
-    set(CMAKE_CXX_COMPILER clang++)
-endif()
-
-project(examples)
-
-set(TCLSH_VERSION_STRING, "8.6")
-
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    list(APPEND OPTS -stdlib=libc++)
-    list(APPEND OPTS -Wno-reserved-id-macro)
-    list(APPEND OPTS -Wno-padded)
-    list(APPEND OPTS -Wno-c++98-compat)
-endif()
-
-find_path(TCL_INCLUDE_PATH tcl.h PATHS /usr/local/include/tcl8.6 /usr/local/include /usr/include/tcl8.6 NO_DEFAULT_PATH)
-find_library(TCL_LIBRARY NAMES tcl8.6 tcl86 HINTS /Users/shannonnoe/git/tcl/unix PATHS /usr/local/lib)
-find_library(TCL_STUB_LIBRARY NAMES tclstub8.6 tclstub86 HINTS /Users/shannonnoe/git/tcl/unix PATHS /usr/local/lib)
-
-message(INFO " Tcl include ${TCL_INCLUDE_PATH}")
-message(INFO " Tcl library ${TCL_LIBRARY}")
-message(INFO " Tcl stub library ${TCL_STUB_LIBRARY}")
-
-if(NOT TCL_LIBRARY)
-  message(FATAL_ERROR " Tcl library not found")
-endif()
-
-find_library(CPPTCL_LIBRARY cpptcl HINTS ${CMAKE_CURRENT_SOURCE_DIR}/../build PATHS /usr/local/lib)
-find_path (CPPTCL_INCLUDE_DIRS cpptcl/cpptcl.h HINTS ${CMAKE_CURRENT_SOURCE_DIR}/.. PATHS ${CMAKE_INCLUDE_PATH})
-
-set(CMAKE_BUILD_TYPE Debug)
-
-include_directories(${CPPTCL_INCLUDE_DIRS} ${TCL_INCLUDE_PATH})
-
-add_compile_options(${OPTS})
-
 add_executable(example2 example2.cc)
-target_link_libraries(example2 PUBLIC ${CPPTCL_LIBRARY} ${TCL_LIBRARY} ${TCL_STUB_LIBRARY})
+target_link_libraries(example2 PUBLIC cpptcl_static ${TCL_STUB_LIBRARY} ${TCL_LIBRARY})
 
 add_executable(example6 example6.cc)
-target_link_libraries(example6 PUBLIC ${CPPTCL_LIBRARY} ${TCL_LIBRARY} ${TCL_STUB_LIBRARY})
+target_link_libraries(example6 PUBLIC cpptcl_static ${TCL_STUB_LIBRARY} ${TCL_LIBRARY})
 
+add_library(libcpptcl_module_two SHARED cpptcl_module_two.cc)
+target_link_libraries(libcpptcl_module_two PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
+
+add_library(libcpptcl_module_three SHARED cpptcl_module_three.cc)
+target_link_libraries(libcpptcl_module_three PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
+
+add_library(libcpptcl_module_five SHARED cpptcl_module_five.cc)
+target_link_libraries(libcpptcl_module_five PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
+
+add_library(libcpptcl_module_six SHARED cpptcl_module_six.cc)
+target_link_libraries(libcpptcl_module_six PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
+
+# Create a packaged TCL extension
+add_library(cpptcl_example_functions SHARED cpptcl_example_functions.cc)
+target_link_libraries (cpptcl_example_functions cpptcl_static ${TCL_STUB_LIBRARY})
+
+set(CPPTCL_EXAMPLE_FUNCTIONS_VERSION 0.0.1)
+set_target_properties(cpptcl_example_functions PROPERTIES VERSION ${CPPTCL_EXAMPLE_FUNCTIONS_VERSION})
+target_compile_options(cpptcl_example_functions PRIVATE "-DCPPTCL_EXAMPLE_FUNCTIONS_VERSION=\"${CPPTCL_EXAMPLE_FUNCTIONS_VERSION}\"")
+
+message(INFO " Tcl tclsh ${TCL_TCLSH}")
+message(INFO " Tcl include ${TCL_INCLUDE_PATH}")
+message(INFO " Tcl stub library ${TCL_STUB_LIBRARY}")
+
+set(CPPTCL_INSTALL_EXAMPLE FALSE CACHE BOOL "Install example TCL extension")
+#
+# To install the example TCL extension as a package
+#    cd build
+#    cmake -DCPPTCL_INSTALL_EXAMPLE:BOOL=TRUE ..
+#    make
+#    make install
+#
+if(CPPTCL_INSTALL_EXAMPLE)
+    #
+    # Install the cpptcl_example_functions as a TCL package
+    #
+    install(TARGETS cpptcl_example_functions LIBRARY DESTINATION lib/cpptcl_example_functions_${CPPTCL_EXAMPLE_FUNCTIONS_VERSION})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pkgIndex.tcl DESTINATION lib/cpptcl_example_functions_${CPPTCL_EXAMPLE_FUNCTIONS_VERSION})
+    #
+    # Generate the pkgIndex.tcl
+    #
+    # We need to remove the unversioned library symlink to avoid double loads in pkgIndex.tcl
+    #
+    add_custom_command(TARGET cpptcl_example_functions
+       POST_BUILD
+       WORKING_DIRECTORY ${PROJECT_BIN_DIR}
+       COMMAND /bin/rm ARGS "./libcpptcl_example_functions${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    add_custom_command(TARGET cpptcl_example_functions
+       POST_BUILD
+       COMMAND /bin/sh ARGS -c "echo pkg_mkIndex .|${TCL_TCLSH}")
+endif(CPPTCL_INSTALL_EXAMPLE)
