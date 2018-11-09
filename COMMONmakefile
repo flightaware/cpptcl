@@ -3,7 +3,7 @@ CPPTCL_LIBRARY = build/libcpptcl.so
 all: $(CPPTCL_LIBRARY) 
 
 build/Makefile: CMakeLists.txt
-	(mkdir -p build; cd build; cmake ..)
+	(mkdir -p build; cd build; cmake -DTCL_VERSION_MINOR:STRING=$${TCL_VERSION_MINOR:-6} ..)
 
 debug: CMakeLists.txt
 	(mkdir -p build; cd build; cmake -DCMAKE_BUILD_TYPE=Debug ..)
