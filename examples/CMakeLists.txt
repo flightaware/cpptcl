@@ -26,26 +26,34 @@ set(CPPTCL_EXAMPLE_FUNCTIONS_VERSION 0.0.1)
 set_target_properties(cpptcl_example_functions PROPERTIES VERSION ${CPPTCL_EXAMPLE_FUNCTIONS_VERSION})
 target_compile_options(cpptcl_example_functions PRIVATE "-DCPPTCL_EXAMPLE_FUNCTIONS_VERSION=\"${CPPTCL_EXAMPLE_FUNCTIONS_VERSION}\"")
 
-find_path(TCL_EXECUTABLE_PATH tclsh PATHS /usr/local/bin /usr/bin /bin NO_DEFAULT_PATH)
-
-set(TCL_TCLSH "${TCL_EXECUTABLE_PATH}/tclsh")
-
 message(INFO " Tcl tclsh ${TCL_TCLSH}")
 message(INFO " Tcl include ${TCL_INCLUDE_PATH}")
 message(INFO " Tcl stub library ${TCL_STUB_LIBRARY}")
 
-# Install the cpptcl_example_functions as a TCL package
-install(TARGETS cpptcl_example_functions LIBRARY DESTINATION lib/cpptcl_example_functions_${CPPTCL_EXAMPLE_FUNCTIONS_VERSION})
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pkgIndex.tcl DESTINATION lib/cpptcl_example_functions_${CPPTCL_EXAMPLE_FUNCTIONS_VERSION})
+set(CPPTCL_INSTALL_EXAMPLE FALSE CACHE BOOL "Install example TCL extension")
 #
-# Generate the pkgIndex.tcl
+# To install the example TCL extension as a package
+#    cd build
+#    cmake -DCPPTCL_INSTALL_EXAMPLE:BOOL=TRUE ..
+#    make
+#    make install
 #
-# We need to remove the unversioned library symlink to avoid double loads in pkgIndex.tcl
-#
-add_custom_command(TARGET cpptcl_example_functions
-   POST_BUILD
-   WORKING_DIRECTORY ${PROJECT_BIN_DIR}
-   COMMAND /bin/rm ARGS "./libcpptcl_example_functions.dylib")
-add_custom_command(TARGET cpptcl_example_functions
-   POST_BUILD
-   COMMAND /bin/sh ARGS -c "echo pkg_mkIndex .|${TCL_TCLSH}")
+if(CPPTCL_INSTALL_EXAMPLE)
+    #
+    # Install the cpptcl_example_functions as a TCL package
+    #
+    install(TARGETS cpptcl_example_functions LIBRARY DESTINATION lib/cpptcl_example_functions_${CPPTCL_EXAMPLE_FUNCTIONS_VERSION})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pkgIndex.tcl DESTINATION lib/cpptcl_example_functions_${CPPTCL_EXAMPLE_FUNCTIONS_VERSION})
+    #
+    # Generate the pkgIndex.tcl
+    #
+    # We need to remove the unversioned library symlink to avoid double loads in pkgIndex.tcl
+    #
+    add_custom_command(TARGET cpptcl_example_functions
+       POST_BUILD
+       WORKING_DIRECTORY ${PROJECT_BIN_DIR}
+       COMMAND /bin/rm ARGS "./libcpptcl_example_functions${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    add_custom_command(TARGET cpptcl_example_functions
+       POST_BUILD
+       COMMAND /bin/sh ARGS -c "echo pkg_mkIndex .|${TCL_TCLSH}")
+endif(CPPTCL_INSTALL_EXAMPLE)
