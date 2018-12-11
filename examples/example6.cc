@@ -10,13 +10,10 @@ using namespace std;
 using namespace Tcl;
 
 int main() {
-	Tcl_Interp * interp = Tcl_CreateInterp();
-        // Setup the stubs table pointer. TCL can load any extension with a shared library
-        // and that library will expect stubs support.
-	Tcl_InitStubs(interp, "8.0", 0);
-	interpreter i(interp, true);
+    Tcl_Interp * interp = Tcl_CreateInterpWithStubs("8.6", 0);
+    interpreter i(interp, true);
 
-	int numbers[] = {5, 7, 1, 6, 3, 9, 7};
+    int numbers[] = {5, 7, 1, 6, 3, 9, 7};
 	size_t elems = sizeof(numbers) / sizeof(int);
 
 	object tab;

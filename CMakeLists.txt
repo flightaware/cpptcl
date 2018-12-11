@@ -73,5 +73,8 @@ install(TARGETS cpptcl_static ARCHIVE DESTINATION lib)
 install(FILES ${HDRS} DESTINATION include/cpptcl)
 install(FILES ${HDRS_DETAILS} DESTINATION include/cpptcl/details)
 
+add_library(cpptcl_runtime SHARED ${cpptcl_SOURCE_DIR}/cpptcl_runtime.c)
+target_link_libraries(cpptcl_runtime ${TCL_LIBRARY})
+
 add_subdirectory(test)
 add_subdirectory(examples)

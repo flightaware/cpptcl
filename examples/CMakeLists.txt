@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 
 add_executable(example2 example2.cc)
-target_link_libraries(example2 PUBLIC cpptcl_static ${TCL_STUB_LIBRARY} ${TCL_LIBRARY})
+target_link_libraries(example2 PUBLIC cpptcl_static cpptcl_runtime ${TCL_STUB_LIBRARY} ${TCL_LIBRARY})
 
 add_executable(example6 example6.cc)
-target_link_libraries(example6 PUBLIC cpptcl_static ${TCL_STUB_LIBRARY} ${TCL_LIBRARY})
+target_link_libraries(example6 PUBLIC cpptcl_static cpptcl_runtime ${TCL_STUB_LIBRARY} ${TCL_LIBRARY})
 
 add_library(libcpptcl_module_two SHARED cpptcl_module_two.cc)
 target_link_libraries(libcpptcl_module_two PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})

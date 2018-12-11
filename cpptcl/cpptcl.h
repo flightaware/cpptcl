@@ -38,6 +38,11 @@
 
 #include "tcl.h"
 
+// This function is not part of TCL, but is a useful helper.
+extern "C" {
+    Tcl_Interp * Tcl_CreateInterpWithStubs(const char *version, int exact);
+};
+
 namespace Tcl {
 
 // exception class used for reporting all Tcl errors
