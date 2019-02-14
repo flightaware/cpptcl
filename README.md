@@ -13,7 +13,7 @@ Likewise
 [cpptcl documentation](https://github.com/flightaware/cpptcl/tree/master/doc)
 
 Copyright (C) 2004-2006, Maciej Sobczak
-Copyright (C) 2017-2018, FlightAware LLC
+Copyright (C) 2017-2019, FlightAware LLC
 
 ---
 
