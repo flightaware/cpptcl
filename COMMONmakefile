@@ -14,8 +14,11 @@ $(CPPTCL_LIBRARY): build/Makefile
 install: all
 	(cd build; make install)
 
-test: all
-	(cd build; make test)
+test: build/Makefile
+	(cd build; make tests; ctest)
+
+examples: build/Makefile
+	(cd build; make examples)
 
 clean:
 	rm -rf build build_xcode test/build
