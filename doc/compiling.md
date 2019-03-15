@@ -39,4 +39,4 @@ Copyright © 2004-2006, Maciej Sobczak
 
 * * *
 
-Copyright © 2018, FlightAware LLC
+Copyright © 2018 - 2019, FlightAware LLC

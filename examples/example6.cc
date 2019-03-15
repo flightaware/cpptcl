@@ -2,18 +2,16 @@
 
 #include <iostream>
 
-#define CPPTCL_NO_TCL_STUBS
-#include "tcl.h"
 #include "cpptcl/cpptcl.h"
 
 using namespace std;
 using namespace Tcl;
 
 int main() {
-	Tcl_Interp * interp = Tcl_CreateInterp();
-	interpreter i(interp, true);
+    Tcl_Interp * interp = Tcl_CreateInterpWithStubs("8.6", 0);
+    interpreter i(interp, true);
 
-	int numbers[] = {5, 7, 1, 6, 3, 9, 7};
+    int numbers[] = {5, 7, 1, 6, 3, 9, 7};
 	size_t elems = sizeof(numbers) / sizeof(int);
 
 	object tab;

@@ -1,6 +1,6 @@
 //
 // Copyright (C) 2004-2006, Maciej Sobczak
-// Copyright (C) 2017-2018, FlightAware LLC
+// Copyright (C) 2017-2019, FlightAware LLC
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -37,6 +37,11 @@
 #endif
 
 #include "tcl.h"
+
+// This function is not part of TCL, but is a useful helper.
+extern "C" {
+    Tcl_Interp * Tcl_CreateInterpWithStubs(const char *version, int exact);
+};
 
 namespace Tcl {
 

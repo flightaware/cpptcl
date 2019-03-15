@@ -1,11 +1,9 @@
 CPPTCL_LIBRARY = build/libcpptcl.so
-MODULE_PATH = modules/example_functions
-MODULE_LIBRARY = $(MODULE_PATH)/build/libcpptcl_example_functions.so
 
-all: $(MODULE_LIBRARY) 
+all: $(CPPTCL_LIBRARY) 
 
 build/Makefile: CMakeLists.txt
-	(mkdir -p build; cd build; cmake ..)
+	(mkdir -p build; cd build; cmake -DTCL_VERSION_MINOR:STRING=$${TCL_VERSION_MINOR:-6} ..)
 
 debug: CMakeLists.txt
 	(mkdir -p build; cd build; cmake -DCMAKE_BUILD_TYPE=Debug ..)
@@ -18,22 +16,15 @@ install: all
 
 test: all
 	(cd build; make test)
-	(cd test; make test)
-
-MODULE_SRCS = modules/example_functions/cpptcl_example_functions.cc
-
-$(MODULE_LIBRARY): $(CPPTCL_LIBRARY) $(MODULE_PATH)/build/Makefile $(MODULE_SRCS)
-	(cd $(MODULE_PATH)/build; make)
-
-$(MODULE_PATH)/build/Makefile: $(MODULE_PATH)/CMakeLists.txt
-	(cd $(MODULE_PATH); mkdir -p build)
-	(cd $(MODULE_PATH)/build; cmake -DCPPTCL_SOURCE_DIR=$$PWD/../../../ ..)
 
 clean:
-	rm -rf build build_xcode modules/example_functions/build
+	rm -rf build build_xcode test/build
 
+#
+# We cannot control the tclsh link version.  This depends on the installed alternatives.
+#
 test_extension: all
-	/usr/bin/env LD_LIBRARY_PATH=./build TCLLIBPATH=./modules/example_functions/build tclsh test/cpptcl_module_one.tcl 
+	/usr/bin/env LD_LIBRARY_PATH=./build/examples TCLLIBPATH=./build/examples tclsh test/cpptcl_module_one.tcl 
 
 format:
 	find . -name \*.h -o -name \*.cc | xargs clang-format-4.0 -style=file  -i
