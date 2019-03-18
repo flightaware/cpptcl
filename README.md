@@ -39,6 +39,6 @@ The C++/Tcl itself consists of these files:
 
 We're using cmake to generate makefiles.  This is pretty standard in the C++ world.
 
-In order to compile the tests and the examples you may need to change the compiler options to fit your particular environment (different paths to the Tcl headers and libs, another compiler, etc.)
+In order to compile the tests and the examples you may need to change the compiler options to fit your particular environment (different paths to the Tcl headers and libs, another compiler, etc.).  By default tests and examples are not built, but you can build them with the test and examples make targets respectfully.
 
 Anyway - have fun! :-)

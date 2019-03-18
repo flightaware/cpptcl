@@ -77,5 +77,27 @@ add_library(cpptcl_runtime STATIC ${cpptcl_SOURCE_DIR}/cpptcl_runtime.c)
 set_property(TARGET cpptcl_runtime PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(cpptcl_runtime ${TCL_LIBRARY})
 
-add_subdirectory(test)
-add_subdirectory(examples)
+add_subdirectory(test EXCLUDE_FROM_ALL)
+add_subdirectory(examples EXCLUDE_FROM_ALL)
+
+list(APPEND LIST_OF_TESTS test1)
+list(APPEND LIST_OF_TESTS test2)
+list(APPEND LIST_OF_TESTS test3)
+list(APPEND LIST_OF_TESTS test4)
+list(APPEND LIST_OF_TESTS test5)
+list(APPEND LIST_OF_TESTS test6)
+list(APPEND LIST_OF_TESTS test7)
+list(APPEND LIST_OF_TESTS test_main)
+
+add_custom_target(tests DEPENDS ${LIST_OF_TESTS})
+
+list(APPEND LIST_OF_EXAMPLES example2)
+list(APPEND LIST_OF_EXAMPLES example6)
+list(APPEND LIST_OF_EXAMPLES libcpptcl_module_two)
+list(APPEND LIST_OF_EXAMPLES libcpptcl_module_three)
+list(APPEND LIST_OF_EXAMPLES libcpptcl_module_five)
+list(APPEND LIST_OF_EXAMPLES libcpptcl_module_six)
+list(APPEND LIST_OF_EXAMPLES cpptcl_example_functions)
+
+add_custom_target(examples DEPENDS ${LIST_OF_EXAMPLES})
+
