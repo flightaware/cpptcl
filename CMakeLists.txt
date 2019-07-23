@@ -8,43 +8,21 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 message(INFO " cmake build type ${CMAKE_BUILD_TYPE}")
 
-set(TCLSH_VERSION_STRING, "8.6")
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    list(APPEND OPTS -stdlib=libc++)
-    list(APPEND OPTS -Wno-reserved-id-macro)
-    list(APPEND OPTS -Wno-padded)
-    list(APPEND OPTS -Wno-c++98-compat)
-    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
-    endif()
-endif()
-
 include (CTest)
 
-set(TCL_VERSION_MAJOR "8" CACHE STRING "TCL Major version")
-set(TCL_VERSION_MINOR "6" CACHE STRING "TCL Minor version")
-set(TCL_TCLSH "tclsh${TCL_VERSION_MAJOR}.${TCL_VERSION_MINOR}")
-set(TCL_VER "${TCL_VERSION_MAJOR}.${TCL_VERSION_MINOR}")
-set(TCL_VER_BSD "${TCL_VERSION_MAJOR}${TCL_VERSION_MINOR}")
-
-message(INFO " TCL_VER ${TCL_VER}")
-
-find_path(TCL_INCLUDE_PATH tcl.h PATHS /usr/local/include/tcl${TCL_VER} /usr/local/include /usr/include/tcl${TCL_VER} /usr/include NO_DEFAULT_PATH)
-find_library(TCL_LIBRARY NAMES tcl${TCL_VER} tcl${TCL_VER_BSD} PATHS /usr/local/lib /usr/lib)
-find_library(TCL_STUB_LIBRARY NAMES tclstub${TCL_VER} tclstub${TCL_VER_BSD} PATHS /usr/local/lib /usr/lib)
-
-message(INFO " Tcl include ${TCL_INCLUDE_PATH}")
-message(INFO " Tcl library ${TCL_LIBRARY}")
-message(INFO " Tcl stub library ${TCL_STUB_LIBRARY}")
-message(INFO " Tcl shell ${TCL_TCLSH}")
+find_package(TCL)
 
 if(NOT TCL_LIBRARY)
   message(FATAL_ERROR " Tcl library not found")
+else()
+  message(INFO " Tcl include ${TCL_INCLUDE_PATH}")
+  message(INFO " Tcl library ${TCL_LIBRARY}")
+  message(INFO " Tcl stub library ${TCL_STUB_LIBRARY}")
+  message(INFO " Tcl shell ${TCL_TCLSH}")
 endif()
 
 include_directories(${cpptcl_SOURCE_DIR} ${cpptcl_SOURCE_DIR}/details ${TCL_INCLUDE_PATH})
