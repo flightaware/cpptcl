@@ -46,6 +46,8 @@ add_library(cpptcl SHARED ${SRCS} ${HDRS} ${HDRS_DETAILS})
 add_library(cpptcl_static STATIC ${SRCS} ${HDRS} ${HDRS_DETAILS})
 set_property(TARGET cpptcl_static PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(cpptcl ${TCL_STUB_LIBRARY})
+target_link_libraries(cpptcl_static ${TCL_STUB_LIBRARY})
+
 install(TARGETS cpptcl LIBRARY DESTINATION lib)
 install(TARGETS cpptcl_static ARCHIVE DESTINATION lib)
 install(FILES ${HDRS} DESTINATION include/cpptcl)
