@@ -26,9 +26,9 @@ template <class C, typename R> class method1<C, R, object const &> : public obje
 		object t1 = get_var_params(interp, objc, objv, var_start, pol);
 
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1>(interp, std::bind(cf_, p, _1), t1);
+			dispatch<R>::template do_dispatch<T1>(interp, std::bind(cf_, p, std::placeholders::_1), t1);
 		} else {
-			dispatch<R>::template do_dispatch<T1>(interp, std::bind(f_, p, _1), t1);
+			dispatch<R>::template do_dispatch<T1>(interp, std::bind(f_, p, std::placeholders::_1), t1);
 		}
 	}
 
@@ -54,9 +54,9 @@ template <class C, typename R, typename T1> class method2<C, R, T1, object const
 		object t2 = get_var_params(interp, objc, objv, var_start, pol);
 
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2>(interp, std::bind(cf_, p, _1, _2), tcl_cast<T1>::from(interp, objv[2]), t2);
+			dispatch<R>::template do_dispatch<T1, T2>(interp, std::bind(cf_, p, std::placeholders::_1, std::placeholders::_2), tcl_cast<T1>::from(interp, objv[2]), t2);
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2>(interp, std::bind(f_, p, _1, _2), tcl_cast<T1>::from(interp, objv[2]), t2);
+			dispatch<R>::template do_dispatch<T1, T2>(interp, std::bind(f_, p, std::placeholders::_1, std::placeholders::_2), tcl_cast<T1>::from(interp, objv[2]), t2);
 		}
 	}
 
@@ -82,9 +82,9 @@ template <class C, typename R, typename T1, typename T2> class method3<C, R, T1,
 		object t3 = get_var_params(interp, objc, objv, var_start, pol);
 
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3>(interp, std::bind(cf_, p, _1, _2, _3), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), t3);
+			dispatch<R>::template do_dispatch<T1, T2, T3>(interp, std::bind(cf_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), t3);
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3>(interp, std::bind(f_, p, _1, _2, _3), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), t3);
+			dispatch<R>::template do_dispatch<T1, T2, T3>(interp, std::bind(f_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), t3);
 		}
 	}
 
@@ -110,9 +110,9 @@ template <class C, typename R, typename T1, typename T2, typename T3> class meth
 		object t4 = get_var_params(interp, objc, objv, var_start, pol);
 
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4>(interp, std::bind(cf_, p, _1, _2, _3, _4), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), t4);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4>(interp, std::bind(cf_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), t4);
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4>(interp, std::bind(f_, p, _1, _2, _3, _4), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), t4);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4>(interp, std::bind(f_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), t4);
 		}
 	}
 
@@ -138,9 +138,9 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 		object t5 = get_var_params(interp, objc, objv, var_start, pol);
 
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), t5);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5>(interp, std::bind(cf_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), t5);
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5>(interp, std::bind(f_, p, _1, _2, _3, _4, _5), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), t5);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5>(interp, std::bind(f_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), t5);
 		}
 	}
 
@@ -166,9 +166,9 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 		object t6 = get_var_params(interp, objc, objv, var_start, pol);
 
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), t6);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6>(interp, std::bind(cf_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), t6);
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), t6);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6>(interp, std::bind(f_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), t6);
 		}
 	}
 
@@ -194,9 +194,9 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 		object t7 = get_var_params(interp, objc, objv, var_start, pol);
 
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6, _7), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), t7);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7>(interp, std::bind(cf_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), t7);
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6, _7), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), t7);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7>(interp, std::bind(f_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), t7);
 		}
 	}
 
@@ -222,9 +222,9 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 		object t8 = get_var_params(interp, objc, objv, var_start, pol);
 
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6, _7, _8), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), t8);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8>(interp, std::bind(cf_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), t8);
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6, _7, _8), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), t8);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8>(interp, std::bind(f_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), t8);
 		}
 	}
 
@@ -250,9 +250,9 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 		object t9 = get_var_params(interp, objc, objv, var_start, pol);
 
 		if (cmem_) {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8, T9>(interp, std::bind(cf_, p, _1, _2, _3, _4, _5, _6, _7, _8, _9), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), tcl_cast<T8>::from(interp, objv[9]), t9);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8, T9>(interp, std::bind(cf_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8, std::placeholders::_9), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), tcl_cast<T8>::from(interp, objv[9]), t9);
 		} else {
-			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8, T9>(interp, std::bind(f_, p, _1, _2, _3, _4, _5, _6, _7, _8, _9), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), tcl_cast<T8>::from(interp, objv[9]), t9);
+			dispatch<R>::template do_dispatch<T1, T2, T3, T4, T5, T6, T7, T8, T9>(interp, std::bind(f_, p, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8, std::placeholders::_9), tcl_cast<T1>::from(interp, objv[2]), tcl_cast<T2>::from(interp, objv[3]), tcl_cast<T3>::from(interp, objv[4]), tcl_cast<T4>::from(interp, objv[5]), tcl_cast<T5>::from(interp, objv[6]), tcl_cast<T6>::from(interp, objv[7]), tcl_cast<T7>::from(interp, objv[8]), tcl_cast<T8>::from(interp, objv[9]), t9);
 		}
 	}
 
