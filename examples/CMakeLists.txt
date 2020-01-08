@@ -6,17 +6,17 @@ target_link_libraries(example2 PUBLIC cpptcl_static cpptcl_runtime ${TCL_STUB_LI
 add_executable(example6 example6.cc)
 target_link_libraries(example6 PUBLIC cpptcl_static cpptcl_runtime ${TCL_STUB_LIBRARY} ${TCL_LIBRARY})
 
-add_library(libcpptcl_module_two SHARED cpptcl_module_two.cc)
-target_link_libraries(libcpptcl_module_two PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
+add_library(cpptcl_module_two SHARED cpptcl_module_two.cc)
+target_link_libraries(cpptcl_module_two PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
 
-add_library(libcpptcl_module_three SHARED cpptcl_module_three.cc)
-target_link_libraries(libcpptcl_module_three PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
+add_library(cpptcl_module_three SHARED cpptcl_module_three.cc)
+target_link_libraries(cpptcl_module_three PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
 
-add_library(libcpptcl_module_five SHARED cpptcl_module_five.cc)
-target_link_libraries(libcpptcl_module_five PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
+add_library(cpptcl_module_five SHARED cpptcl_module_five.cc)
+target_link_libraries(cpptcl_module_five PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
 
-add_library(libcpptcl_module_six SHARED cpptcl_module_six.cc)
-target_link_libraries(libcpptcl_module_six PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
+add_library(cpptcl_module_six SHARED cpptcl_module_six.cc)
+target_link_libraries(cpptcl_module_six PUBLIC cpptcl_static ${TCL_STUB_LIBRARY})
 
 # Create a packaged TCL extension
 add_library(cpptcl_example_functions SHARED cpptcl_example_functions.cc)
