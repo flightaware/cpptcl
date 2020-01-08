@@ -21,7 +21,7 @@ Person *makePerson(string const &name) { return new Person(name); }
 // this is a sink function
 void killPerson(Person *p) { delete p; }
 
-CPPTCL_MODULE(Cpptcl_module_four, i) {
+CPPTCL_MODULE(Cpptcl_module_five, i) {
 	// note that the Person class is exposed without any constructor
 	i.class_<Person>("Person", no_init).def("setName", &Person::setName).def("getName", &Person::getName);
 
