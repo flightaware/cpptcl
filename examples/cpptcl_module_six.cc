@@ -14,4 +14,4 @@ int sumAll(object const &argv) {
 	return sum;
 }
 
-CPPTCL_MODULE(Cpptcl_module_five, i) { i.def("sum", sumAll, variadic()); }
+CPPTCL_MODULE(Cpptcl_module_six, i) { i.def("sum", sumAll, variadic()); }
