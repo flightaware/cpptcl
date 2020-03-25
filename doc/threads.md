@@ -4,6 +4,16 @@
 
 Warning: cpptcl *does not work* with the TCL thread package.
 
+#### Using threads
+
+You can use threads in TCL extensions.
+You can use threads with cpptcl.
+Be sure that you write good thread safe code.
+Be sure that all calls to TCL API's are properly protected with a mutex for exclusion.
+In general, cpptcl code itself has no thread specific safety code included.
+
+#### TCL's core use of threads
+
 The TCL interpreter is usually compiled with thread support by default on linux.
 TCL uses two threads.
 One thread is the main thread.
