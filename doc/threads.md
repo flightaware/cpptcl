@@ -18,6 +18,8 @@ The important point is that every TCL thread has a separate TCL interpreter.
 This interpreter is created in the TCL thread package with Tcl_CreateInterp C API.
 There is no API access to the interpreter pointer in the thread created by the TCL thread package.
 There is also no API to access the main Tcl_Interp *.
+But you created that interpreter, so one would have to save that pointer.
+cpptcl saves this interpreter pointer as the "default interpreter".
 
 #### cpptcl does not work with the TCL thread package
 
@@ -36,6 +38,8 @@ template <typename T> T get(interpreter &i = *interpreter::defaultInterpreter) c
 If you created the interpreters, then one can pass the specific interpreter as needed.
 
 Since TCL thread creates and hides the pointers to the interpreters, changes are required in TCL thread to fix this.
+
+The Tcl::interpreter::defaultInterpreter is a namescoped global.
 
 ##### Mixing interpreter allocations will cause errors or worse
 
