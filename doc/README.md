@@ -33,6 +33,8 @@ C++/Tcl provides the following features:
 [Factories and sinks](callpolicies.md#factories)  
 [Variadic functions](callpolicies.md#variadic)  
 
+[Threads](threads.md)  
+
 [Various Goodies](goodies.md)  
 
 [Package support](goodies.md#packages)  
