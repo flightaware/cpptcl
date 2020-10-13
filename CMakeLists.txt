@@ -12,7 +12,7 @@ message(INFO " cmake build type ${CMAKE_BUILD_TYPE}")
 
 set(TCLSH_VERSION_STRING, "8.6")
 
-# Determine if RESTinio is built as a subproject (using add_subdirectory)
+# Determine if cpptcl is built as a subproject (using add_subdirectory)
 # or if it is the master project.
 SET(CPPTCL_MASTER_PROJECT OFF)
 IF (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
