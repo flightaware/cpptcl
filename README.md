@@ -42,6 +42,29 @@ The C++/Tcl itself consists of these files:
 
 We're using cmake to generate makefiles.  This is pretty standard in the C++ world.
 
-In order to compile the tests and the examples you may need to change the compiler options to fit your particular environment (different paths to the Tcl headers and libs, another compiler, etc.).  By default tests and examples are not built, but you can build them with the test and examples make targets respectfully.
+In order to compile the tests and the examples you may need to change the compiler options to fit your particular environment (different paths to the Tcl headers and libs, another compiler, etc.).
+
+---
+
+cmake
+
+The cpptcl install includes a cpptcl-config.cmake and target files for easy inclusion using cmake.  You can therefore use `find_package(cpptcl)` to add the dependency.  It will expose the `cpptcl_INCLUDE_DIR` variable with the header file location and the following targets to link against:
+
+cpptcl::cpptcl
+cpptcl::cpptcl_static
+cpptcl::cpptcl_runtime
+
+Here's a simple example of including cpptcl in your CMakeLists.txt file:
+
+```
+find_package(cpptcl REQUIRED)
+find_package(TCL REQUIRED)
+
+add_executable(myexec main.cpp)
+target_include_directories(myexec PRIVATE ${cpptcl_INCLUDE_DIR})
+target_include_directories(myexec PRIVATE ${TCL_INCLUDE_PATH})
+target_link_libraries(myexec cpptcl::cpptcl)
+target_link_libraries(myexec ${TCL_LIBRARY})
+```
 
 Anyway - have fun! :-)
