@@ -14,18 +14,14 @@ set(TCLSH_VERSION_STRING, "8.6")
 
 # Determine if cpptcl is built as a subproject (using add_subdirectory)
 # or if it is the master project.
-SET(CPPTCL_MASTER_PROJECT OFF)
-IF (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-	SET(CPPTCL_MASTER_PROJECT ON)
-ENDIF ()
+set(CPPTCL_MASTER_PROJECT OFF)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+	set(CPPTCL_MASTER_PROJECT ON)
+endif()
 
 option(CPPTCL_INSTALL "Generate the install target." ${CPPTCL_MASTER_PROJECT})
 option(CPPTCL_TEST "Build the tests." ${CPPTCL_MASTER_PROJECT})
 option(CPPTCL_EXAMPLES "Build the examples." ${CPPTCL_MASTER_PROJECT})
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     list(APPEND OPTS -stdlib=libc++)
@@ -60,9 +56,9 @@ if(NOT TCL_LIBRARY)
   message(FATAL_ERROR " Tcl library not found")
 endif()
 
-include_directories(${cpptcl_SOURCE_DIR} ${cpptcl_SOURCE_DIR}/details ${TCL_INCLUDE_PATH})
-
 add_compile_options(${OPTS})
+
+set(cpptcl_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 list(APPEND SRCS ${cpptcl_SOURCE_DIR}/cpptcl.cc)
 list(APPEND HDRS ${cpptcl_SOURCE_DIR}/cpptcl/cpptcl.h)
@@ -78,12 +74,46 @@ list(APPEND HDRS_DETAILS ${cpptcl_SOURCE_DIR}/cpptcl/details/methods_v.h)
 list(APPEND HDRS_DETAILS ${cpptcl_SOURCE_DIR}/cpptcl/details/bind.h)
 
 add_library(cpptcl SHARED ${SRCS} ${HDRS} ${HDRS_DETAILS})
-add_library(cpptcl_static STATIC ${SRCS} ${HDRS} ${HDRS_DETAILS})
-set_property(TARGET cpptcl_static PROPERTY POSITION_INDEPENDENT_CODE ON)
+add_library(cpptcl::cpptcl ALIAS cpptcl)
+target_compile_features(cpptcl PUBLIC cxx_std_11)
+set_target_properties(cpptcl PROPERTIES
+	CXX_EXTENSIONS OFF
+	CXX_STANDARD_REQUIRED ON)
+target_include_directories(cpptcl
+	PUBLIC
+		$<BUILD_INTERFACE:${cpptcl_INCLUDE_DIR}>
+		$<INSTALL_INTERFACE:include>
+	)
+target_include_directories(cpptcl PUBLIC ${TCL_INCLUDE_PATH})
 target_link_libraries(cpptcl ${TCL_STUB_LIBRARY})
 
+add_library(cpptcl_static STATIC ${SRCS} ${HDRS} ${HDRS_DETAILS})
+add_library(cpptcl::cpptcl_static ALIAS cpptcl_static)
+target_compile_features(cpptcl_static PUBLIC cxx_std_11)
+set_target_properties(cpptcl_static PROPERTIES
+	POSITION_INDEPENDENT_CODE ON
+	CXX_EXTENSIONS OFF
+	CXX_STANDARD_REQUIRED ON)
+target_include_directories(cpptcl_static
+	PUBLIC
+		$<BUILD_INTERFACE:${cpptcl_INCLUDE_DIR}>
+		$<INSTALL_INTERFACE:include>
+	)
+target_include_directories(cpptcl_static PUBLIC ${TCL_INCLUDE_PATH})
+
 add_library(cpptcl_runtime STATIC ${cpptcl_SOURCE_DIR}/cpptcl_runtime.c)
-set_property(TARGET cpptcl_runtime PROPERTY POSITION_INDEPENDENT_CODE ON)
+add_library(cpptcl::cpptcl_runtime ALIAS cpptcl_runtime)
+target_compile_features(cpptcl_runtime PUBLIC cxx_std_11)
+set_target_properties(cpptcl_runtime PROPERTIES
+	POSITION_INDEPENDENT_CODE ON
+	CXX_EXTENSIONS OFF
+	CXX_STANDARD_REQUIRED ON)
+target_include_directories(cpptcl_runtime
+	PUBLIC
+		$<BUILD_INTERFACE:${cpptcl_INCLUDE_DIR}>
+		$<INSTALL_INTERFACE:include>
+	)
+target_include_directories(cpptcl_runtime PUBLIC ${TCL_INCLUDE_PATH})
 target_link_libraries(cpptcl_runtime ${TCL_LIBRARY})
 
 if (CPPTCL_TEST)
@@ -129,10 +159,10 @@ if (CPPTCL_INSTALL)
 		EXPORT CPPTCL_ALL_TARGETS
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
-	install(FILES ${HDRS}
-		DESTINATION ${cpptcl_INCLUDE_DIR})
-	install(FILES ${HDRS_DETAILS}
-		DESTINATION ${cpptcl_INCLUDE_DIR}/details)
+	install(
+		DIRECTORY cpptcl/
+		DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cpptcl
+		FILES_MATCHING PATTERN *.h)
 
 	install(
 		EXPORT CPPTCL_ALL_TARGETS
