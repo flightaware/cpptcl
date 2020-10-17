@@ -128,7 +128,7 @@ if (CPPTCL_INSTALL)
 	include(GNUInstallDirs)
 	include(CMakePackageConfigHelpers)
 
-	set(cpptcl_INCLUDE_DIR include/cpptcl/ CACHE STRING
+	set(cpptcl_INCLUDE_DIR include/ CACHE STRING
 		"cpptcl header install directory")
 	set(CPPTCL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/cpptcl CACHE STRING
 		"Installation directory for cmake files, relative to ${CMAKE_INSTALL_PREFIX}.")
