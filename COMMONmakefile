@@ -15,7 +15,7 @@ install: all
 	(cd build; make install)
 
 test: build/Makefile
-	(cd build; make tests; ctest)
+	(cd build; ctest)
 
 examples: build/Makefile
 	(cd build; make examples)
