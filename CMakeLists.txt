@@ -82,7 +82,7 @@ set_target_properties(cpptcl PROPERTIES
 target_include_directories(cpptcl
 	PUBLIC
 		$<BUILD_INTERFACE:${cpptcl_INCLUDE_DIR}>
-		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 	)
 target_include_directories(cpptcl PUBLIC ${TCL_INCLUDE_PATH})
 target_link_libraries(cpptcl ${TCL_STUB_LIBRARY})
@@ -97,7 +97,7 @@ set_target_properties(cpptcl_static PROPERTIES
 target_include_directories(cpptcl_static
 	PUBLIC
 		$<BUILD_INTERFACE:${cpptcl_INCLUDE_DIR}>
-		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 	)
 target_include_directories(cpptcl_static PUBLIC ${TCL_INCLUDE_PATH})
 
@@ -111,7 +111,7 @@ set_target_properties(cpptcl_runtime PROPERTIES
 target_include_directories(cpptcl_runtime
 	PUBLIC
 		$<BUILD_INTERFACE:${cpptcl_INCLUDE_DIR}>
-		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 	)
 target_include_directories(cpptcl_runtime PUBLIC ${TCL_INCLUDE_PATH})
 target_link_libraries(cpptcl_runtime ${TCL_LIBRARY})
