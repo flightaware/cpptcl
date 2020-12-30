@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/flightaware/cpptcl.svg?branch=master)](https://travis-ci.org/flightaware/cpptcl)
+![Linux CI](https://github.com/bovine/cpptcl/workflows/Linux%20CI/badge.svg)
+![Mac CI](https://github.com/bovine/cpptcl/workflows/Mac%20CI/badge.svg)
 
 C++/Tcl - a C++ library for interoperability between C++ and Tcl.
 ========
