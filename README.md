@@ -1,5 +1,5 @@
-![Linux CI](https://github.com/bovine/cpptcl/workflows/Linux%20CI/badge.svg)
-![Mac CI](https://github.com/bovine/cpptcl/workflows/Mac%20CI/badge.svg)
+![Linux CI](https://github.com/flightaware/cpptcl/workflows/Linux%20CI/badge.svg)
+![Mac CI](https://github.com/flightaware/cpptcl/workflows/Mac%20CI/badge.svg)
 
 C++/Tcl - a C++ library for interoperability between C++ and Tcl.
 ========
