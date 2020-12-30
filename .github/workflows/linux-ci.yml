@@ -1,0 +1,30 @@
+name: Linux CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+        sudo apt-get update -qq; fi
+        sudo apt-get install -y gcc-7 g++-7; fi
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 70 --slave /usr/bin/g++ g++ /usr/bin/g++-7; fi
+        sudo apt-get install -y tcl8.6-dev; fi
+    - name: make
+      run: make
+    - name: install
+      run: sudo make install
+    - name: make test
+      run: make test
+    - name: make examples
+      run: make examples
