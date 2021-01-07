@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.8)
 
 project(cpptcl)
 
+include(cmake/version.cmake)
+load_git_properties(cpptcl ${CMAKE_BINARY_DIR}/generated)
+
 set(CPPTCL_VERSION 2.2.5)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -61,8 +64,10 @@ add_compile_options(${OPTS})
 set(cpptcl_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 list(APPEND SRCS ${cpptcl_SOURCE_DIR}/cpptcl.cc)
+list(APPEND SRCS ${CMAKE_BINARY_DIR}/generated/cpptcl_version.cpp)
 list(APPEND HDRS ${cpptcl_SOURCE_DIR}/cpptcl/cpptcl.h)
 list(APPEND HDRS ${cpptcl_SOURCE_DIR}/cpptcl/cpptcl_object.h)
+list(APPEND HDRS ${cpptcl_SOURCE_DIR}/cpptcl/version.h)
 list(APPEND HDRS_DETAILS ${cpptcl_SOURCE_DIR}/cpptcl/details/callbacks.h)
 list(APPEND HDRS_DETAILS ${cpptcl_SOURCE_DIR}/cpptcl/details/callbacks_v.h) 
 list(APPEND HDRS_DETAILS ${cpptcl_SOURCE_DIR}/cpptcl/details/constructors.h)
@@ -85,7 +90,7 @@ target_include_directories(cpptcl
 		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 	)
 target_include_directories(cpptcl PUBLIC ${TCL_INCLUDE_PATH})
-target_link_libraries(cpptcl ${TCL_STUB_LIBRARY})
+target_link_libraries(cpptcl PUBLIC ${TCL_STUB_LIBRARY})
 
 add_library(cpptcl_static STATIC ${SRCS} ${HDRS} ${HDRS_DETAILS})
 add_library(cpptcl::cpptcl_static ALIAS cpptcl_static)
@@ -114,7 +119,7 @@ target_include_directories(cpptcl_runtime
 		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 	)
 target_include_directories(cpptcl_runtime PUBLIC ${TCL_INCLUDE_PATH})
-target_link_libraries(cpptcl_runtime ${TCL_LIBRARY})
+target_link_libraries(cpptcl_runtime PUBLIC ${TCL_LIBRARY})
 
 if (CPPTCL_TEST)
 	add_subdirectory(test)
