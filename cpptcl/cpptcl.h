@@ -26,6 +26,9 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <utility>
+#include <type_traits>
+#include <tuple>
 
 //
 // Using TCL stubs is the default behavior
@@ -82,6 +85,8 @@ policies usage(std::string const &message);
 class interpreter;
 class object;
 
+void post_process_policies(Tcl_Interp *interp, policies &pol, Tcl_Obj *CONST objv[], bool isMethod);
+
 namespace details {
 
 // wrapper for the evaluation result
@@ -110,12 +115,60 @@ void set_result(Tcl_Interp *interp, std::string const &s);
 void set_result(Tcl_Interp *interp, void *p);
 void set_result(Tcl_Interp *interp, object const &o);
 
-// helper functor for converting Tcl objects to the given type
-#include "cpptcl/details/conversions.h"
+template <typename T> struct tcl_cast;
 
-// dispatchers able to capture (or ignore) the result
-#include "cpptcl/details/dispatchers.h"
+template <typename T> struct tcl_cast<T *> {
+	static T *from(Tcl_Interp *, Tcl_Obj *obj, bool byReference) {
+		std::string s(Tcl_GetString(obj));
+		if (s.size() == 0) {
+			throw tcl_error("Expected pointer value, got empty string.");
+		}
 
+		if (s[0] != 'p') {
+			throw tcl_error("Expected pointer value.");
+		}
+
+		std::istringstream ss(s);
+		char dummy;
+		void *p;
+		ss >> dummy >> p;
+
+		return static_cast<T *>(p);
+	}
+};
+
+// the following partial specialization is to strip reference
+// (it returns a temporary object of the underlying type, which
+// can be bound to the const-ref parameter of the actual function)
+
+template <typename T> struct tcl_cast<T const &> {
+	static T from(Tcl_Interp *interp, Tcl_Obj *obj, bool byReference) { return tcl_cast<T>::from(interp, obj, byReference); }
+};
+
+template <typename T> class tcl_cast_by_reference {
+  public:
+	static bool const value = false;
+};
+
+// the following specializations are implemented
+
+template <> struct tcl_cast<int> { static int from(Tcl_Interp *, Tcl_Obj *, bool byReference = false); };
+
+template <> struct tcl_cast<long> { static long from(Tcl_Interp *, Tcl_Obj *, bool byReference = false); };
+
+template <> struct tcl_cast<bool> { static bool from(Tcl_Interp *, Tcl_Obj *, bool byReference = false); };
+
+template <> struct tcl_cast<double> { static double from(Tcl_Interp *, Tcl_Obj *, bool byReference = false); };
+
+template <> struct tcl_cast<std::string> { static std::string from(Tcl_Interp *, Tcl_Obj *, bool byReference = false); };
+
+template <> struct tcl_cast<char const *> { static char const *from(Tcl_Interp *, Tcl_Obj *, bool byReference = false); };
+
+template <> struct tcl_cast<object> { static object from(Tcl_Interp *, Tcl_Obj *, bool byReference = false); };
+
+
+
+	
 // helper for checking for required number of parameters
 // (throws tcl_error when not met)
 void check_params_no(int objc, int required, const std::string &message);
@@ -128,7 +181,7 @@ class callback_base {
   public:
 	virtual ~callback_base() {}
 
-	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], policies const &pol) = 0;
+	virtual void invoke(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) = 0;
 };
 
 // base class for object command handlers
@@ -190,138 +243,120 @@ template <class C> class class_handler : public class_handler_base {
 	}
 };
 
-// factory functions for creating class objects
-#include "cpptcl/details/constructors.h"
+template <std::size_t ...Is> struct my_index_sequence { };
+template <std::size_t N, std::size_t ...Is> struct my_make_index_sequence : public my_make_index_sequence<N - 1, N - 1, Is...> { };
+template <std::size_t ...Is> struct my_make_index_sequence<0, Is...> : public my_index_sequence<Is...> { };
+template <typename T, bool Last>
+struct fix_variadic_return {
+	typedef T type;
+};
+template <>
+struct fix_variadic_return<object const &, true> {
+	typedef object type;
+};
+template <typename TT, bool dummy>
+struct return_dummy_value {
+	static TT doit(object const & o) {
+		return TT();
+	}
+};
+template <typename TT> struct return_dummy_value<TT, false> {
+	static TT doit(object const & o) {
+		return o;
+	}
+};
+template <int ArgOffset, typename TT, std::size_t In, std::size_t Ii>
+typename details::fix_variadic_return<TT, Ii + 1 == In>::type do_cast(bool variadic, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[], policies const & pol) {
+static const bool is_variadic_arg = std::is_same<TT, object const &>::value && In == Ii + 1;
+	if (is_variadic_arg && variadic) {
+		return details::return_dummy_value<TT, !is_variadic_arg>::doit(details::get_var_params(interp, objc, objv, In + ArgOffset - 1, pol));
+	} else {
+		return details::tcl_cast<TT>::from(interp, objv[Ii + ArgOffset], false);
+	}
+}
 
-// actual callback envelopes
-#include "cpptcl/details/callbacks.h"
+template <typename Fn, class C, typename R, typename ...Ts> class method_v : public object_cmd_base {
+	//typedef R (C::*mem_type)(Ts...);
+	//typedef R (C::*cmem_type)(Ts...) const;
+	typedef Fn fn_type;
+	
+	policies policies_;
 
-// actual method envelopes
-#include "cpptcl/details/methods.h"
+public:
+	method_v(fn_type f, policies const & pol = policies()) : policies_(pol), f_(f) { }
+	//method_v(mem_type f, policies const & pol = policies()) : policies_(pol), f_(f), cmem_(false) { }
+	//method_v(cmem_type f, policies const & pol = policies()) : policies_(pol), cf_(f), cmem_(true) { }
 
-// helper meta function for figuring appropriate constructor callback
-#include "cpptcl/details/metahelpers.h"
-
-// this class is used to provide the "def" interface for defining
-// class member functions
-
-template <class C> class class_definer {
-  public:
-	class_definer(std::shared_ptr<class_handler<C>> ch) : ch_(ch) {}
-
-	template <typename R> class_definer &def(std::string const &name, R (C::*f)(), policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method0<C, R>(f)), p);
-		return *this;
+	template <bool v> struct void_return { };
+	
+  	template <typename Fnn, std::size_t ...Is>
+	void do_invoke(Fnn fn, my_index_sequence<Is...> const &, C * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], policies const & pol, void_return<true>) {
+		(p->*fn)(do_cast<2, Ts, sizeof...(Is), Is>(pol.variadic_, interp, argc, argv, pol)...);
+	}
+	template <typename Fnn, std::size_t ...Is>
+	void do_invoke(Fnn fn, my_index_sequence<Is...> const &, C * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], policies const & pol, void_return<false>) {
+		details::set_result(interp, (p->*fn)(do_cast<2, Ts, sizeof...(Is), Is>(pol.variadic_, interp, argc, argv, pol)...));
 	}
 
-	template <typename R> class_definer &def(std::string const &name, R (C::*f)() const, policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method0<C, R>(f)), p);
-		return *this;
+	virtual void invoke(void *pv, Tcl_Interp *interp, int argc, Tcl_Obj *CONST argv[], policies const &pol__) {
+		check_params_no(argc, sizeof...(Ts), policies_.usage_);
+		C *p = static_cast<C *>(pv);
+		do_invoke(f_, my_make_index_sequence<sizeof... (Ts)>(), p, interp, argc, argv, policies_, void_return<std::is_same<R, void>::value>());
+#if 0
+			if (cmem_) {
+			do_invoke(cf_, my_make_index_sequence<sizeof... (Ts)>(), p, interp, argc, argv, policies_, void_return<std::is_same<R, void>::value>());
+		} else {
+			do_invoke(f_, my_make_index_sequence<sizeof... (Ts)>(), p, interp, argc, argv, policies_, void_return<std::is_same<R, void>::value>());
+		}
+#endif
+		post_process_policies(interp, policies_, argv, true);
 	}
-
-	template <typename R, typename T1> class_definer &def(std::string const &name, R (C::*f)(T1), policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method1<C, R, T1>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1> class_definer &def(std::string const &name, R (C::*f)(T1) const, policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method1<C, R, T1>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2> class_definer &def(std::string const &name, R (C::*f)(T1, T2), policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method2<C, R, T1, T2>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2> class_definer &def(std::string const &name, R (C::*f)(T1, T2) const, policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method2<C, R, T1, T2>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3), policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method3<C, R, T1, T2, T3>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3) const, policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method3<C, R, T1, T2, T3>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4), policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method4<C, R, T1, T2, T3, T4>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4) const, policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method4<C, R, T1, T2, T3, T4>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4, T5), policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method5<C, R, T1, T2, T3, T4, T5>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4, T5) const, policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method5<C, R, T1, T2, T3, T4, T5>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4, T5, T6), policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method6<C, R, T1, T2, T3, T4, T5, T6>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4, T5, T6) const, policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method6<C, R, T1, T2, T3, T4, T5, T6>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4, T5, T6, T7), policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method7<C, R, T1, T2, T3, T4, T5, T6, T7>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4, T5, T6, T7) const, policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method7<C, R, T1, T2, T3, T4, T5, T6, T7>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4, T5, T6, T7, T8), policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method8<C, R, T1, T2, T3, T4, T5, T6, T7, T8>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4, T5, T6, T7, T8) const, policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method8<C, R, T1, T2, T3, T4, T5, T6, T7, T8>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4, T5, T6, T7, T8, T9), policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method9<C, R, T1, T2, T3, T4, T5, T6, T7, T8, T9>(f)), p);
-		return *this;
-	}
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9> class_definer &def(std::string const &name, R (C::*f)(T1, T2, T3, T4, T5, T6, T7, T8, T9) const, policies const &p = policies()) {
-		ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method9<C, R, T1, T2, T3, T4, T5, T6, T7, T8, T9>(f)), p);
-		return *this;
-	}
-
   private:
-	std::shared_ptr<class_handler<C>> ch_;
+	fn_type f_;
+	//cmem_type cf_;
+	//bool cmem_;
 };
 
 } // namespace details
 
 // init type for defining class constructors
-template <typename T1 = void, typename T2 = void, typename T3 = void, typename T4 = void, typename T5 = void, typename T6 = void, typename T7 = void, typename T8 = void, typename T9 = void> class init {};
+//template <typename T1 = void, typename T2 = void, typename T3 = void, typename T4 = void, typename T5 = void, typename T6 = void, typename T7 = void, typename T8 = void, typename T9 = void> class init {};
 
+template <typename ...Ts> struct init { };
+	
 // no_init type and object - to define classes without constructors
 namespace details {
 struct no_init_type {};
+
+template <typename R, typename ...Ts> class callback_v : public details::callback_base {
+	typedef R (*functor_type)(Ts...);
+	functor_type f_;
+
+	policies policies_;
+public :
+	callback_v(functor_type f, policies const & pol) : policies_(pol), f_(f) { }
+
+	template <bool v> struct void_return { };
+
+	template <std::size_t ...Is>
+	void do_invoke(my_index_sequence<Is...> const &, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], policies const & pol, void_return<false>) {
+		details::set_result(interp, f_(do_cast<1, Ts, sizeof...(Is), Is>(pol.variadic_, interp, argc, argv, pol)...));
+	}
+	template <std::size_t ...Is>
+	void do_invoke(my_index_sequence<Is...> const &, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], policies const & pol, void_return<true>) {
+		f_(do_cast<1, Ts, sizeof...(Is), Is>(pol.variadic_, interp, argc, argv, pol)...);
+	}
+
+	void invoke(Tcl_Interp * interp, int argc, Tcl_Obj * const argv []) {
+		check_params_no(argc - 1, sizeof...(Ts) - (policies_.variadic_ ? 1 : 0), policies_.usage_);
+		do_invoke(my_make_index_sequence<sizeof... (Ts)>(), interp, argc, argv, policies_, void_return<std::is_same<R, void>::value>());
+		post_process_policies(interp, policies_, argv, false);
+	}
+};
+
 } // namespace details
+
+
 extern details::no_init_type no_init;
 
 // interpreter wrapper
@@ -340,7 +375,233 @@ class interpreter {
 	interpreter(const interpreter &i);
 	interpreter();
 
-  public:
+	class TclChannelStreambuf : public std::streambuf {
+	private:
+		Tcl_Channel channel_;
+		Tcl_DString iBuffer_;
+		int iOffset_;
+	public:
+		TclChannelStreambuf (Tcl_Channel channel)
+			: channel_ (channel)
+		{
+			Tcl_DStringInit (&iBuffer_);
+			iOffset_ = 0;
+			base_ = (char *) malloc(1024);
+			buf_size_ = 1024;
+			my_base_ = true;
+		}
+		~TclChannelStreambuf ()
+		{
+			Tcl_DStringFree (&iBuffer_);
+		}
+
+		char * base() {
+			return base_;
+		}
+		char * ebuf() {
+			return base_ + buf_size_;
+		}
+		char * base_;
+		bool my_base_;
+		std::streamsize buf_size_;
+		
+		std::streambuf * setbuf(char * s, std::streamsize n) {
+			if (my_base_) {
+				free(base_);
+				my_base_ = false;
+			}
+			base_ = s;
+			buf_size_ = n;
+		}
+
+		void doallocate() {
+		}
+		void cdoallocate() {
+		}
+
+
+		std::streamsize xsputn(const char_type * s, std::streamsize n) {
+			//std::cerr << "xsputn " << n << "\n";
+			if (base() == 0) {
+				int r = Tcl_Write(channel_, s, n);
+				return r;
+			}
+			if (pptr() < ebuf()) {
+				std::streamsize nn = std::min(n, ebuf() - pptr());
+				memcpy(pptr(), s, nn);
+				setp(pptr() + nn, ebuf());
+				return nn;
+			}
+			return 0;
+		}
+		int overflow (int c) {
+			int status;
+
+			//std::cerr << "overflow " << (char) c << "\n";
+			
+			// Allocate reserve area if necessary
+			
+			if (base() == 0) {
+				char b[1];
+				b[0] = c;
+				status = Tcl_Write (channel_, b, 1);
+				if (status != 1) return EOF;
+				return 1;
+				//	cdoallocate ();
+			}
+			
+			// If there's no output buffer, allocate one.  Place it after the
+			// end of the input buffer if there's input.
+			
+			if (!pbase ()) {
+				if (egptr () > gptr ()) {
+					setp (egptr (), ebuf ());
+				} else {
+					setp (base (), ebuf ());
+				}
+			}
+			
+			// If there's stuff in the output buffer, write it to the channel.
+			
+			if (pptr () > pbase ()) {
+				status = Tcl_Write (channel_, pbase (), pptr () - pbase ());
+				if (status < (pptr () - pbase ())) {
+					return EOF;
+				}
+				setp (pbase (), ebuf ());
+			}
+			
+			// Save the next character in the output buffer.  If there is none,
+			// flush the channel
+			
+			if (c != EOF) {
+				*(pptr()) = c;
+				pbump (1);
+				return c;
+			} else {
+				setp (0, 0);
+				status = Tcl_Flush (channel_);
+				if (status != TCL_OK) return EOF;
+				return 0;
+			}
+		}
+		
+		int underflow ()
+		{
+			
+			// Nothing to do if the buffer hasn't underflowed.
+			
+			if (egptr() > gptr()) {
+				return *gptr ();
+			}
+			
+			// Make sure we have a reserve area
+			
+			if (!base()) {
+				doallocate ();
+			}
+			
+			// Flush any pending output
+			
+			if (pptr () > pbase ()) {
+				if (overflow (EOF) == EOF) {
+					return EOF;
+				}
+			}
+			
+			// Get a fresh line of input if needed
+			
+			if (iOffset_ >= Tcl_DStringLength (&iBuffer_)) {
+				if (Tcl_Gets (channel_, &iBuffer_)) {
+					return EOF;
+				}
+				Tcl_DStringAppend (&iBuffer_, "\n", 1);
+			}
+			
+			// Determine how much input to transfer.  Don't fill the reserve
+			// area more than half full
+			
+			size_t xferlen = Tcl_DStringLength (&iBuffer_);
+			if ((long) xferlen > (ebuf () - base ()) / 2) {
+				xferlen = (ebuf () - base ()) / 2;
+			}
+			
+			// Copy string into the buffer, and advance pointers
+			
+			memcpy ((void *) base (), (void *) Tcl_DStringValue (&iBuffer_), xferlen);
+			iOffset_ += xferlen;
+			setg (base (), base (), base () + xferlen);
+			
+			// Free the input string if we're finished with it
+			
+			if (iOffset_ >= Tcl_DStringLength (&iBuffer_)) {
+				Tcl_DStringFree (&iBuffer_);
+				iOffset_ = 0;
+			}
+			
+			// Return the first character read.
+			
+			return *gptr ();
+		}
+		
+		int sync () {
+			// Flush output
+			
+			if (overflow (EOF) == EOF) {
+				return EOF;
+			}
+			
+			// Discard input
+			setg (0, 0, 0);
+			
+			return 0;
+		}
+	};
+public:
+	std::iostream & tin() {
+		if (! tin_.rdbuf()) {
+			tin_.rdbuf(new TclChannelStreambuf (Tcl_GetStdChannel (TCL_STDIN)));
+		}
+		return tin_;
+	}
+	std::iostream & tout() {
+		if (! tout_.rdbuf()) {
+			tout_.rdbuf(new TclChannelStreambuf (Tcl_GetStdChannel (TCL_STDOUT)));
+		}
+		return tout_;
+	}
+	std::iostream & terr() {
+		if (! terr_.rdbuf()) {
+			terr_.rdbuf(new TclChannelStreambuf (Tcl_GetStdChannel (TCL_STDERR)));
+			terr_.rdbuf()->pubsetbuf(NULL, 0);
+		}
+		return terr_;
+	}
+
+
+	template <class C> class class_definer {
+	public:
+		class_definer(std::shared_ptr<details::class_handler<C>> ch) : ch_(ch) {}
+		
+		template <typename Fn>
+		class_definer & def(std::string const & name, Fn fn, policies const & p = policies()) {
+			return def2<Fn>(name, fn, p);
+		}
+
+		template <typename Fn, typename R, typename ...Ts>
+		class_definer & def2(std::string const & name, R (C::*f)(Ts...), policies const & p = policies()) {
+			ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method_v<Fn, C, R, Ts...>(f, p)), p);
+			return *this;
+		}
+		template <typename Fn, typename R, typename ...Ts>
+		class_definer & def2(std::string const & name, R (C::*f)(Ts...) const, policies const & p = policies()) {
+			ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::method_v<Fn, C, R, Ts...>(f, p)), p);
+			return *this;
+		}
+	private:
+		std::shared_ptr<details::class_handler<C>> ch_;
+	};
+
 	interpreter(Tcl_Interp *, bool owner = false);
 	~interpreter();
 
@@ -350,56 +611,37 @@ class interpreter {
 
 	// free function definitions
 
-	template <typename R> void def(std::string const &name, R (*f)(), policies const &p = policies()) { add_function(name, std::shared_ptr<details::callback_base>(new details::callback0<R>(f)), p); }
-
-	template <typename R, typename T1> void def(std::string const &name, R (*f)(T1), policies const &p = policies()) { add_function(name, std::shared_ptr<details::callback_base>(new details::callback1<R, T1>(f)), p); }
-
-	template <typename R, typename T1, typename T2> void def(std::string const &name, R (*f)(T1, T2), policies const &p = policies()) { add_function(name, std::shared_ptr<details::callback_base>(new details::callback2<R, T1, T2>(f)), p); }
-
-	template <typename R, typename T1, typename T2, typename T3> void def(std::string const &name, R (*f)(T1, T2, T3), policies const &p = policies()) { add_function(name, std::shared_ptr<details::callback_base>(new details::callback3<R, T1, T2, T3>(f)), p); }
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4> void def(std::string const &name, R (*f)(T1, T2, T3, T4), policies const &p = policies()) { add_function(name, std::shared_ptr<details::callback_base>(new details::callback4<R, T1, T2, T3, T4>(f)), p); }
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5> void def(std::string const &name, R (*f)(T1, T2, T3, T4, T5), policies const &p = policies()) { add_function(name, std::shared_ptr<details::callback_base>(new details::callback5<R, T1, T2, T3, T4, T5>(f)), p); }
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6> void def(std::string const &name, R (*f)(T1, T2, T3, T4, T5, T6), policies const &p = policies()) { add_function(name, std::shared_ptr<details::callback_base>(new details::callback6<R, T1, T2, T3, T4, T5, T6>(f)), p); }
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7> void def(std::string const &name, R (*f)(T1, T2, T3, T4, T5, T6, T7), policies const &p = policies()) { add_function(name, std::shared_ptr<details::callback_base>(new details::callback7<R, T1, T2, T3, T4, T5, T6, T7>(f)), p); }
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8> void def(std::string const &name, R (*f)(T1, T2, T3, T4, T5, T6, T7, T8), policies const &p = policies()) { add_function(name, std::shared_ptr<details::callback_base>(new details::callback8<R, T1, T2, T3, T4, T5, T6, T7, T8>(f)), p); }
-
-	template <typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9> void def(std::string const &name, R (*f)(T1, T2, T3, T4, T5, T6, T7, T8, T9), policies const &p = policies()) { add_function(name, std::shared_ptr<details::callback_base>(new details::callback9<R, T1, T2, T3, T4, T5, T6, T7, T8, T9>(f)), p); }
+	template <typename R, typename ...Ts>
+	void def(std::string const & name, R(*f)(Ts...), policies const & p = policies()) {
+		add_function(name, new details::callback_v<R, Ts...>(f, p));
+	}
 
 	// class definitions
 
-	template <class C> details::class_definer<C> class_(std::string const &name) {
+	template <typename C, typename ...Ts> struct call_constructor {
+		static C * doit(Ts... ts) {
+			return new C(ts...);
+		}
+	};
+	
+	template <class C, typename ...Ts> class_definer<C> class_(std::string const &name, init<Ts...> const & = init<Ts...>(), policies const &p = policies()) {
+		typedef details::callback_v<C *, Ts...> callback_type;
+		
 		std::shared_ptr<details::class_handler<C>> ch(new details::class_handler<C>());
 
 		add_class(name, ch);
 
-		add_constructor(name, ch, std::shared_ptr<details::callback_base>(new details::callback0<C *>(&details::construct<C, void, void, void, void, void, void, void, void, void>::doit)));
+		add_constructor(name, ch, new callback_type(&call_constructor<C, Ts...>::doit, p), p);
 
-		return details::class_definer<C>(ch);
+		return class_definer<C>(ch);
 	}
-
-	template <class C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9> details::class_definer<C> class_(std::string const &name, init<T1, T2, T3, T4, T5, T6, T7, T8, T9> const &, policies const &p = policies()) {
-		typedef typename details::get_callback_type_for_construct<C, T1, T2, T3, T4, T5, T6, T7, T8, T9>::type callback_type;
-
+	
+	template <class C> class_definer<C> class_(std::string const &name, details::no_init_type const &) {
 		std::shared_ptr<details::class_handler<C>> ch(new details::class_handler<C>());
 
 		add_class(name, ch);
 
-		add_constructor(name, ch, std::shared_ptr<details::callback_base>(new callback_type(&details::construct<C, T1, T2, T3, T4, T5, T6, T7, T8, T9>::doit)), p);
-
-		return details::class_definer<C>(ch);
-	}
-
-	template <class C> details::class_definer<C> class_(std::string const &name, details::no_init_type const &) {
-		std::shared_ptr<details::class_handler<C>> ch(new details::class_handler<C>());
-
-		add_class(name, ch);
-
-		return details::class_definer<C>(ch);
+		return class_definer<C>(ch);
 	}
 
 	// free script evaluation
@@ -434,14 +676,15 @@ class interpreter {
   private:
 	void operator=(const interpreter &);
 
-	void add_function(std::string const &name, std::shared_ptr<details::callback_base> cb, policies const &p = policies());
+	void add_function(std::string const &name, details::callback_base * cb);
 
 	void add_class(std::string const &name, std::shared_ptr<details::class_handler_base> chb);
 
-	void add_constructor(std::string const &name, std::shared_ptr<details::class_handler_base> chb, std::shared_ptr<details::callback_base> cb, policies const &p = policies());
+	void add_constructor(std::string const &name, std::shared_ptr<details::class_handler_base> chb, details::callback_base * cb, policies const &p = policies());
 
 	Tcl_Interp *interp_;
 	bool owner_;
+	std::iostream tin_, tout_, terr_;
 };
 
 #include "cpptcl/cpptcl_object.h"
@@ -458,23 +701,22 @@ template <class InputIterator> details::result interpreter::eval(InputIterator f
 	return details::result(interp_);
 }
 
-namespace details {
-
-// additional callback envelopes for variadic functions
-#include "cpptcl/details/callbacks_v.h"
-
-// additional method envelopes for variadic methods
-#include "cpptcl/details/methods_v.h"
-
-} // namespace details
-
-#include "cpptcl/details/bind.h"
-
 inline std::ostream & operator<<(std::ostream &os, const object& obj)
 {
     return os << obj.get<std::string>();
 }
 
+
+#if 0
+	extern "C" void
+	TclConsoleStreambufSetup () {
+		cin = new TclChannelStreambuf (Tcl_GetStdChannel (TCL_STDIN));
+		cout = new TclChannelStreambuf (Tcl_GetStdChannel (TCL_STDOUT));
+		cerr = new TclChannelStreambuf (Tcl_GetStdChannel (TCL_STDERR));
+		cerr << "C++ standard input and output now on the Tcl console" << endl;
+	}
+#endif
+	
 } // namespace Tcl
 
 // macro for defining loadable module entry point

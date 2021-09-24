@@ -19,9 +19,20 @@ using namespace Tcl;
 using namespace Tcl::details;
 using namespace std;
 
+
+typedef std::pair<shared_ptr<callback_base>, policies> callback_handler_client_data_t;
+struct constructor_handler_client_data_t {
+	callback_base * cb;
+	shared_ptr<class_handler_base> chb;
+	policies pol;
+};
+
+
 result::result(Tcl_Interp *interp) : interp_(interp) {}
 
 result::operator bool() const {
+	return tcl_cast<bool>::from(interp_, Tcl_GetObjResult(interp_));
+
 	Tcl_Obj *obj = Tcl_GetObjResult(interp_);
 
 	int val, cc;
@@ -34,6 +45,7 @@ result::operator bool() const {
 }
 
 result::operator double() const {
+	return tcl_cast<double>::from(interp_, Tcl_GetObjResult(interp_));
 	Tcl_Obj *obj = Tcl_GetObjResult(interp_);
 
 	double val;
@@ -46,6 +58,7 @@ result::operator double() const {
 }
 
 result::operator int() const {
+	return tcl_cast<int>::from(interp_, Tcl_GetObjResult(interp_));
 	Tcl_Obj *obj = Tcl_GetObjResult(interp_);
 
 	int val, cc;
@@ -58,6 +71,7 @@ result::operator int() const {
 }
 
 result::operator long() const {
+	return tcl_cast<long>::from(interp_, Tcl_GetObjResult(interp_));
 	Tcl_Obj *obj = Tcl_GetObjResult(interp_);
 
 	long val;
@@ -118,6 +132,7 @@ object details::get_var_params(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv
 	return o;
 }
 
+
 namespace // anonymous
 {
 
@@ -134,6 +149,11 @@ typedef map<Tcl_Interp *, policies_interp_map> policies_map;
 
 policies_map call_policies;
 
+
+	typedef std::map<std::string, callback_base *> all_definitions2_t;
+	typedef std::map<Tcl_Interp *, all_definitions2_t> all_definitions_t;
+	all_definitions_t all_definitions;
+	
 // map of object handlers
 typedef map<string, shared_ptr<class_handler_base>> class_interp_map;
 typedef map<Tcl_Interp *, class_interp_map> class_handlers_map;
@@ -154,94 +174,18 @@ bool find_policies(Tcl_Interp *interp, string const &cmdName, policies_interp_ma
 
 extern "C" int object_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 
-// helper function for post-processing call policies
-// for both free functions (isMethod == false)
-// and class methods (isMethod == true)
-void post_process_policies(Tcl_Interp *interp, policies &pol, Tcl_Obj *CONST objv[], bool isMethod) {
-	// check if it is a factory
-	if (!pol.factory_.empty()) {
-		class_handlers_map::iterator it = class_handlers.find(interp);
-
-		if (it == class_handlers.end()) {
-			throw tcl_error("Factory was registered for unknown class.");
-		}
-
-		class_interp_map::iterator oit = it->second.find(pol.factory_);
-		if (oit == it->second.end()) {
-			throw tcl_error("Factory was registered for unknown class.");
-		}
-
-		class_handler_base *chb = oit->second.get();
-
-		// register a new command for the object returned
-		// by this factory function
-		// if everything went OK, the result is the address of the
-		// new object in the 'pXXX' form
-		// - the new command will be created with this name
-
-		Tcl_CreateObjCommand(interp, Tcl_GetString(Tcl_GetObjResult(interp)), object_handler, static_cast<ClientData>(chb), 0);
-	}
-
-	// process all declared sinks
-	// - unregister all object commands that envelopes the pointers
-	for (vector<int>::iterator s = pol.sinks_.begin(); s != pol.sinks_.end(); ++s) {
-		if (isMethod == false) {
-			// example: if there is a declared sink at parameter 3,
-			// and the Tcl command was:
-			// % fun par1 par2 PAR3 par4
-			// then the index 3 correctly points into the objv array
-
-			int index = *s;
-			Tcl_DeleteCommand(interp, Tcl_GetString(objv[index]));
-		} else {
-			// example: if there is a declared sink at parameter 3,
-			// and the Tcl command was:
-			// % $p method par1 par2 PAR3 par4
-			// then the index 3 needs to be incremented
-			// in order correctly point into the 4th index of objv array
-
-			int index = *s + 1;
-			Tcl_DeleteCommand(interp, Tcl_GetString(objv[index]));
-		}
-	}
-}
 
 // actual functions handling various callbacks
 
 // generic callback handler
-extern "C" int callback_handler(ClientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
-	callback_map::iterator it = callbacks.find(interp);
+extern "C" int callback_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
+	//	callback_handler_client_data_t * cdp = (callback_handler_client_data_t *) cd;
 
-	if (it == callbacks.end()) {
-		Tcl_SetObjResult(interp, Tcl_NewStringObj("Trying to invoke non-existent callback (wrong interpreter?)", -1));
-		return TCL_ERROR;
-	}
-
-	string cmdName(Tcl_GetString(objv[0]));
-	callback_interp_map::iterator iti = it->second.find(cmdName);
-	if (iti == it->second.end()) {
-		Tcl_SetObjResult(interp, Tcl_NewStringObj("Trying to invoke non-existent callback (wrong cmd name?)", -1));
-		return TCL_ERROR;
-	}
-
-	policies_map::iterator pit = call_policies.find(interp);
-	if (pit == call_policies.end()) {
-		Tcl_SetObjResult(interp, Tcl_NewStringObj("Trying to invoke callback with no known policies", -1));
-		return TCL_ERROR;
-	}
-
-	policies_interp_map::iterator piti;
-	if (find_policies(interp, cmdName, piti) == false) {
-		Tcl_SetObjResult(interp, Tcl_NewStringObj("Trying to invoke callback with no known policies", -1));
-		return TCL_ERROR;
-	}
-
-	policies &pol = piti->second;
-
+	callback_base * cb = (callback_base *) cd;
+	
 	try {
-		iti->second->invoke(interp, objc, objv, pol);
-
-		post_process_policies(interp, pol, objv, false);
+		cb->invoke(interp, objc, objv);
+		//post_process_policies(interp, cdp->second, objv, false);
 	} catch (exception const &e) {
 		Tcl_SetObjResult(interp, Tcl_NewStringObj(const_cast<char *>(e.what()), -1));
 		return TCL_ERROR;
@@ -276,7 +220,7 @@ extern "C" int object_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_O
 
 		chb->invoke(p, interp, objc, objv, pol);
 
-		post_process_policies(interp, pol, objv, true);
+		//post_process_policies(interp, pol, objv, true);
 	} catch (exception const &e) {
 		Tcl_SetObjResult(interp, Tcl_NewStringObj(const_cast<char *>(e.what()), -1));
 		return TCL_ERROR;
@@ -294,37 +238,17 @@ extern "C" int constructor_handler(ClientData cd, Tcl_Interp *interp, int objc, 
 	// which is responsible for managing commands for
 	// objects of a given type
 
-	class_handler_base *chb = reinterpret_cast<class_handler_base *>(cd);
 
-	callback_map::iterator it = constructors.find(interp);
-	if (it == constructors.end()) {
-		Tcl_SetObjResult(interp, Tcl_NewStringObj("Trying to invoke non-existent callback (wrong interpreter?)", -1));
-		return TCL_ERROR;
-	}
-
-	string className(Tcl_GetString(objv[0]));
-	callback_interp_map::iterator iti = it->second.find(className);
-	if (iti == it->second.end()) {
-		Tcl_SetObjResult(interp, Tcl_NewStringObj("Trying to invoke non-existent callback (wrong class name?)", -1));
-		return TCL_ERROR;
-	}
-
-	policies_interp_map::iterator piti;
-	if (find_policies(interp, className, piti) == false) {
-		Tcl_SetObjResult(interp, Tcl_NewStringObj("Trying to invoke callback with no known policies", -1));
-		return TCL_ERROR;
-	}
-
-	policies &pol = piti->second;
+	constructor_handler_client_data_t * up = (constructor_handler_client_data_t *) cd;
 
 	try {
-		iti->second->invoke(interp, objc, objv, pol);
+		up->cb->invoke(interp, objc, objv);
 
 		// if everything went OK, the result is the address of the
 		// new object in the 'pXXX' form
 		// - we can create a new command with this name
 
-		Tcl_CreateObjCommand(interp, Tcl_GetString(Tcl_GetObjResult(interp)), object_handler, static_cast<ClientData>(chb), 0);
+		Tcl_CreateObjCommand(interp, Tcl_GetString(Tcl_GetObjResult(interp)), object_handler, static_cast<ClientData>(up->chb.get()), 0);
 	} catch (exception const &e) {
 		Tcl_SetResult(interp, const_cast<char *>(e.what()), TCL_VOLATILE);
 		return TCL_ERROR;
@@ -337,6 +261,10 @@ extern "C" int constructor_handler(ClientData cd, Tcl_Interp *interp, int objc, 
 }
 
 } // namespace
+
+
+
+
 
 Tcl::details::no_init_type Tcl::no_init;
 
@@ -642,7 +570,7 @@ Tcl_Interp *object::get_interp() const { return interp_; }
 
 Tcl::interpreter *interpreter::defaultInterpreter = nullptr;
 
-interpreter::interpreter() {
+interpreter::interpreter() : tin_(nullptr), tout_(nullptr), terr_(nullptr) {
 	interp_ = Tcl_CreateInterp();
 	owner_ = true;
 	if (defaultInterpreter) {
@@ -650,7 +578,7 @@ interpreter::interpreter() {
 	}
 }
 
-interpreter::interpreter(Tcl_Interp *interp, bool owner) {
+interpreter::interpreter(Tcl_Interp *interp, bool owner) : tin_(nullptr), tout_(nullptr), terr_(nullptr) {
 	interp_ = interp;
 	owner_ = owner;
 	if (!defaultInterpreter) {
@@ -662,7 +590,7 @@ interpreter::interpreter(Tcl_Interp *interp, bool owner) {
 	}
 }
 
-interpreter::interpreter(const interpreter &i) : interp_(i.interp_), owner_(i.owner_) {}
+interpreter::interpreter(const interpreter &i) : interp_(i.interp_), owner_(i.owner_), tin_(nullptr), tout_(nullptr), terr_(nullptr) {}
 
 interpreter::~interpreter() {
 	if (owner_) {
@@ -754,7 +682,6 @@ void interpreter::create_namespace(string const &name) {
 	}
 }
 
-
 void interpreter::create_alias(string const &cmd, interpreter &targetInterp, string const &targetCmd) {
 	int cc = Tcl_CreateAlias(interp_, cmd.c_str(), targetInterp.interp_, targetCmd.c_str(), 0, 0);
 	if (cc != TCL_OK) {
@@ -762,6 +689,18 @@ void interpreter::create_alias(string const &cmd, interpreter &targetInterp, str
 	}
 }
 
+void interpreter::clear_definitions(Tcl_Interp *interp) {
+	all_definitions_t::iterator it = all_definitions.find(interp);
+	if (it == all_definitions.end()) return;
+	for (all_definitions2_t::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+		Tcl_DeleteCommand(interp, it2->first.c_str());
+		delete it2->second;
+	}
+	all_definitions.erase(it);
+	class_handlers.erase(interp);
+}
+
+#if 0
 void interpreter::clear_definitions(Tcl_Interp *interp) {
 	// delete all callbacks that were registered for given interpreter
 
@@ -808,21 +747,30 @@ void interpreter::clear_definitions(Tcl_Interp *interp) {
 
 	class_handlers.erase(interp);
 }
+#endif
 
-void interpreter::add_function(string const &name, shared_ptr<callback_base> cb, policies const &p) {
-	Tcl_CreateObjCommand(interp_, name.c_str(), callback_handler, 0, 0);
-
-	callbacks[interp_][name] = cb;
-	call_policies[interp_][name] = p;
+void interpreter::add_function(string const &name, callback_base * cb) {
+	Tcl_CreateObjCommand(interp_, name.c_str(), callback_handler, cb, 0);
+	all_definitions[interp_][name] = cb;
 }
 
-void interpreter::add_class(string const &name, shared_ptr<class_handler_base> chb) { class_handlers[interp_][name] = chb; }
+void interpreter::add_class(string const &name, shared_ptr<class_handler_base> chb) {
+	class_handlers[interp_][name] = chb;
+}
 
-void interpreter::add_constructor(string const &name, shared_ptr<class_handler_base> chb, shared_ptr<callback_base> cb, policies const &p) {
-	Tcl_CreateObjCommand(interp_, name.c_str(), constructor_handler, static_cast<ClientData>(chb.get()), 0);
+void interpreter::add_constructor(string const &name, shared_ptr<class_handler_base> chb, callback_base * cb, policies const &p) {
+	constructor_handler_client_data_t * up = new constructor_handler_client_data_t;
+	up->cb = cb;
+	up->chb = chb;
+	up->pol = p;
 
-	constructors[interp_][name] = cb;
-	call_policies[interp_][name] = p;
+	Tcl_CreateObjCommand(interp_, name.c_str(), constructor_handler, up, 0);
+	all_definitions[interp_][name] = cb;
+
+	//Tcl_CreateObjCommand(interp_, name.c_str(), constructor_handler, static_cast<ClientData>(chb.get()), 0);
+
+	//constructors[interp_][name] = cb;
+	//call_policies[interp_][name] = p;
 }
 
 int tcl_cast<int>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
@@ -843,6 +791,60 @@ long tcl_cast<long>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	}
 
 	return res;
+}
+
+namespace Tcl {
+// helper function for post-processing call policies
+// for both free functions (isMethod == false)
+// and class methods (isMethod == true)
+void post_process_policies(Tcl_Interp *interp, policies &pol, Tcl_Obj *CONST objv[], bool isMethod) {
+	// check if it is a factory
+	if (!pol.factory_.empty()) {
+		class_handlers_map::iterator it = class_handlers.find(interp);
+
+		if (it == class_handlers.end()) {
+			throw tcl_error("Factory was registered for unknown class.");
+		}
+
+		class_interp_map::iterator oit = it->second.find(pol.factory_);
+		if (oit == it->second.end()) {
+			throw tcl_error("Factory was registered for unknown class.");
+		}
+
+		class_handler_base *chb = oit->second.get();
+
+		// register a new command for the object returned
+		// by this factory function
+		// if everything went OK, the result is the address of the
+		// new object in the 'pXXX' form
+		// - the new command will be created with this name
+
+		Tcl_CreateObjCommand(interp, Tcl_GetString(Tcl_GetObjResult(interp)), object_handler, static_cast<ClientData>(chb), 0);
+	}
+
+	// process all declared sinks
+	// - unregister all object commands that envelopes the pointers
+	for (vector<int>::iterator s = pol.sinks_.begin(); s != pol.sinks_.end(); ++s) {
+		if (isMethod == false) {
+			// example: if there is a declared sink at parameter 3,
+			// and the Tcl command was:
+			// % fun par1 par2 PAR3 par4
+			// then the index 3 correctly points into the objv array
+
+			int index = *s;
+			Tcl_DeleteCommand(interp, Tcl_GetString(objv[index]));
+		} else {
+			// example: if there is a declared sink at parameter 3,
+			// and the Tcl command was:
+			// % $p method par1 par2 PAR3 par4
+			// then the index 3 needs to be incremented
+			// in order correctly point into the 4th index of objv array
+
+			int index = *s + 1;
+			Tcl_DeleteCommand(interp, Tcl_GetString(objv[index]));
+		}
+	}
+}
 }
 
 bool tcl_cast<bool>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
