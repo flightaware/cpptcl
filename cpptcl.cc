@@ -19,88 +19,29 @@ using namespace Tcl;
 using namespace Tcl::details;
 using namespace std;
 
-
 typedef std::pair<shared_ptr<callback_base>, policies> callback_handler_client_data_t;
 struct constructor_handler_client_data_t {
 	callback_base * cb;
 	shared_ptr<class_handler_base> chb;
-	policies pol;
 };
-
 
 result::result(Tcl_Interp *interp) : interp_(interp) {}
 
-result::operator bool() const {
-	return tcl_cast<bool>::from(interp_, Tcl_GetObjResult(interp_));
-
-	Tcl_Obj *obj = Tcl_GetObjResult(interp_);
-
-	int val, cc;
-	cc = Tcl_GetBooleanFromObj(interp_, obj, &val);
-	if (cc != TCL_OK) {
-		throw tcl_error(interp_);
-	}
-
-	return static_cast<bool>(val);
-}
-
-result::operator double() const {
-	return tcl_cast<double>::from(interp_, Tcl_GetObjResult(interp_));
-	Tcl_Obj *obj = Tcl_GetObjResult(interp_);
-
-	double val;
-	int cc = Tcl_GetDoubleFromObj(interp_, obj, &val);
-	if (cc != TCL_OK) {
-		throw tcl_error(interp_);
-	}
-
-	return val;
-}
-
-result::operator int() const {
-	return tcl_cast<int>::from(interp_, Tcl_GetObjResult(interp_));
-	Tcl_Obj *obj = Tcl_GetObjResult(interp_);
-
-	int val, cc;
-	cc = Tcl_GetIntFromObj(interp_, obj, &val);
-	if (cc != TCL_OK) {
-		throw tcl_error(interp_);
-	}
-
-	return val;
-}
-
-result::operator long() const {
-	return tcl_cast<long>::from(interp_, Tcl_GetObjResult(interp_));
-	Tcl_Obj *obj = Tcl_GetObjResult(interp_);
-
-	long val;
-	int cc;
-	cc = Tcl_GetLongFromObj(interp_, obj, &val);
-	if (cc != TCL_OK) {
-		throw tcl_error(interp_);
-	}
-
-	return val;
-}
-
+result::operator bool()   const { return tcl_cast<bool  >::from(interp_, Tcl_GetObjResult(interp_)); }
+result::operator double() const { return tcl_cast<double>::from(interp_, Tcl_GetObjResult(interp_)); }
+result::operator int()    const { return tcl_cast<int   >::from(interp_, Tcl_GetObjResult(interp_)); }
+result::operator long()   const { return tcl_cast<long  >::from(interp_, Tcl_GetObjResult(interp_)); }
 result::operator string() const {
 	Tcl_Obj *obj = Tcl_GetObjResult(interp_);
 	return Tcl_GetString(obj);
 }
-
 result::operator object() const { return object(Tcl_GetObjResult(interp_)); }
 
-void details::set_result(Tcl_Interp *interp, bool b) { Tcl_SetObjResult(interp, Tcl_NewBooleanObj(b)); }
-
-void details::set_result(Tcl_Interp *interp, int i) { Tcl_SetObjResult(interp, Tcl_NewIntObj(i)); }
-
-void details::set_result(Tcl_Interp *interp, long i) { Tcl_SetObjResult(interp, Tcl_NewLongObj(i)); }
-
-void details::set_result(Tcl_Interp *interp, double d) { Tcl_SetObjResult(interp, Tcl_NewDoubleObj(d)); }
-
+void details::set_result(Tcl_Interp *interp, bool b         ) { Tcl_SetObjResult(interp, Tcl_NewBooleanObj(b)); }
+void details::set_result(Tcl_Interp *interp, int i          ) { Tcl_SetObjResult(interp, Tcl_NewIntObj(i)); }
+void details::set_result(Tcl_Interp *interp, long i         ) { Tcl_SetObjResult(interp, Tcl_NewLongObj(i)); }
+void details::set_result(Tcl_Interp *interp, double d       ) { Tcl_SetObjResult(interp, Tcl_NewDoubleObj(d)); }
 void details::set_result(Tcl_Interp *interp, string const &s) { Tcl_SetObjResult(interp, Tcl_NewStringObj(s.data(), static_cast<int>(s.size()))); }
-
 void details::set_result(Tcl_Interp *interp, void *p) {
 	ostringstream ss;
 	ss << 'p' << p;
@@ -111,9 +52,16 @@ void details::set_result(Tcl_Interp *interp, void *p) {
 
 void details::set_result(Tcl_Interp *interp, object const &o) { Tcl_SetObjResult(interp, o.get_object()); }
 
-void details::check_params_no(int objc, int required, const std::string &message) {
+void details::check_params_no(int objc, int required, int maximum, const std::string &message) {
 	if (objc < required) {
-		throw tcl_error(message);
+		std::ostringstream oss;
+		oss << "too few arguments: " << objc << " given, " << required << " required";
+		throw tcl_error(oss.str());
+	}
+	if (maximum != -1 && objc > maximum) {
+		std::ostringstream oss;
+		oss << "too many arguments: " << objc << " given, " << maximum << " allowed";
+		throw tcl_error(oss.str());
 	}
 }
 
@@ -121,17 +69,16 @@ object details::get_var_params(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv
 	object o;
 
 	if (pol.variadic_) {
-		check_params_no(objc, from, pol.usage_);
+		check_params_no(objc, from, -1, pol.usage_);
 		o.assign(objv + from, objv + objc);
 	} else {
-		check_params_no(objc, from + 1, pol.usage_);
+		check_params_no(objc, from + 1, from + 1, pol.usage_);
 		o.assign(objv[from]);
 	}
 
 	o.set_interp(interp);
 	return o;
 }
-
 
 namespace // anonymous
 {
@@ -149,18 +96,18 @@ typedef map<Tcl_Interp *, policies_interp_map> policies_map;
 
 policies_map call_policies;
 
+typedef std::map<std::string, callback_base *> all_definitions2_t;
+typedef std::map<Tcl_Interp *, all_definitions2_t> all_definitions_t;
+all_definitions_t all_definitions;
 
-	typedef std::map<std::string, callback_base *> all_definitions2_t;
-	typedef std::map<Tcl_Interp *, all_definitions2_t> all_definitions_t;
-	all_definitions_t all_definitions;
-	
 // map of object handlers
 typedef map<string, shared_ptr<class_handler_base>> class_interp_map;
 typedef map<Tcl_Interp *, class_interp_map> class_handlers_map;
 
 class_handlers_map class_handlers;
 
-// helper for finding call policies - returns true when found
+#if 0
+	// helper for finding call policies - returns true when found
 bool find_policies(Tcl_Interp *interp, string const &cmdName, policies_interp_map::iterator &piti) {
 	policies_map::iterator pit = call_policies.find(interp);
 
@@ -171,9 +118,9 @@ bool find_policies(Tcl_Interp *interp, string const &cmdName, policies_interp_ma
 	piti = pit->second.find(cmdName);
 	return piti != pit->second.end();
 }
-
+#endif
+	
 extern "C" int object_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
-
 
 // actual functions handling various callbacks
 
@@ -184,7 +131,7 @@ extern "C" int callback_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl
 	callback_base * cb = (callback_base *) cd;
 	
 	try {
-		cb->invoke(interp, objc, objv);
+		cb->invoke(nullptr, interp, objc, objv);
 		//post_process_policies(interp, cdp->second, objv, false);
 	} catch (exception const &e) {
 		Tcl_SetObjResult(interp, Tcl_NewStringObj(const_cast<char *>(e.what()), -1));
@@ -215,10 +162,10 @@ extern "C" int object_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_O
 	ss >> dummy >> p;
 
 	try {
-		string methodName(Tcl_GetString(objv[1]));
-		policies &pol = chb->get_policies(methodName);
+		//string methodName(Tcl_GetString(objv[1]));
+		//policies &pol = chb->get_policies(methodName);
 
-		chb->invoke(p, interp, objc, objv, pol);
+		chb->invoke(p, interp, objc, objv);
 
 		//post_process_policies(interp, pol, objv, true);
 	} catch (exception const &e) {
@@ -238,11 +185,10 @@ extern "C" int constructor_handler(ClientData cd, Tcl_Interp *interp, int objc, 
 	// which is responsible for managing commands for
 	// objects of a given type
 
-
 	constructor_handler_client_data_t * up = (constructor_handler_client_data_t *) cd;
 
 	try {
-		up->cb->invoke(interp, objc, objv);
+		up->cb->invoke(nullptr, interp, objc, objv);
 
 		// if everything went OK, the result is the address of the
 		// new object in the 'pXXX' form
@@ -262,10 +208,6 @@ extern "C" int constructor_handler(ClientData cd, Tcl_Interp *interp, int objc, 
 
 } // namespace
 
-
-
-
-
 Tcl::details::no_init_type Tcl::no_init;
 
 policies &policies::factory(string const &name) {
@@ -278,10 +220,12 @@ policies &policies::sink(int index) {
 	return *this;
 }
 
+#if 0
 policies &policies::variadic() {
 	variadic_ = true;
 	return *this;
 }
+#endif
 
 policies &policies::usage(string const &message) {
 	usage_ = std::string("Usage: ") + message;
@@ -292,20 +236,21 @@ policies Tcl::factory(string const &name) { return policies().factory(name); }
 
 policies Tcl::sink(int index) { return policies().sink(index); }
 
-policies Tcl::variadic() { return policies().variadic(); }
+//policies Tcl::variadic() { return policies().variadic(); }
 
 policies Tcl::usage(string const &message) { return policies().usage(message); }
 
 class_handler_base::class_handler_base() {
 	// default policies for the -delete command
-	policies_["-delete"] = policies();
+	//policies_["-delete"] = policies();
 }
 
-void class_handler_base::register_method(string const &name, shared_ptr<object_cmd_base> ocb, policies const &p) {
+void class_handler_base::register_method(string const & name, shared_ptr<object_cmd_base> ocb) {
 	methods_[name] = ocb;
-	policies_[name] = p;
+	//policies_[name] = p;
 }
 
+#if 0
 policies &class_handler_base::get_policies(string const &name) {
 	policies_map_type::iterator it = policies_.find(name);
 	if (it == policies_.end()) {
@@ -314,6 +259,7 @@ policies &class_handler_base::get_policies(string const &name) {
 
 	return it->second;
 }
+#endif
 
 object::object() : interp_(0) {
 	obj_ = Tcl_NewObj();
@@ -325,7 +271,7 @@ object::object(bool b) : interp_(0) {
 	Tcl_IncrRefCount(obj_);
 }
 
-object::object(char const *buf, size_t size) : interp_(0) {
+object::object(char const * buf, size_t size) : interp_(0) {
 	obj_ = Tcl_NewByteArrayObj(reinterpret_cast<unsigned char const *>(buf), static_cast<int>(size));
 	Tcl_IncrRefCount(obj_);
 }
@@ -345,21 +291,21 @@ object::object(long l) : interp_(0) {
 	Tcl_IncrRefCount(obj_);
 }
 
-object::object(char const *s) : interp_(0) {
+object::object(char const * s) : interp_(0) {
 	obj_ = Tcl_NewStringObj(s, -1);
 	Tcl_IncrRefCount(obj_);
 }
 
-object::object(string const &s) : interp_(0) {
+object::object(string const & s) : interp_(0) {
 	obj_ = Tcl_NewStringObj(s.data(), static_cast<int>(s.size()));
 	Tcl_IncrRefCount(obj_);
 }
 
-object::object(Tcl_Obj *o, bool shared) : interp_(0) { init(o, shared); }
+object::object(Tcl_Obj * o, bool shared) : interp_(0) { init(o, shared); }
 
-object::object(object const &other, bool shared) : interp_(other.get_interp()) { init(other.obj_, shared); }
+object::object(object const & other, bool shared) : interp_(other.get_interp()) { init(other.obj_, shared); }
 
-void object::init(Tcl_Obj *o, bool shared) {
+void object::init(Tcl_Obj * o, bool shared) {
 	if (shared) {
 		obj_ = o;
 	} else {
@@ -426,65 +372,23 @@ object &object::swap(object &other) {
 	return *this;
 }
 
-template <> bool object::get<bool>(interpreter &i) const {
-	int retVal;
-	int res = Tcl_GetBooleanFromObj(i.get(), obj_, &retVal);
-	if (res != TCL_OK) {
-		throw tcl_error(i.get());
-	}
-
-	return static_cast<bool>(retVal);
+template <typename T> T object::get(interpreter &i) const {
+	return tcl_cast<T>::from(i.get(), obj_, false);
 }
 
-template <> vector<char> object::get<vector<char>>(interpreter &) const {
-	size_t size;
-	char const *buf = get(size);
-	return vector<char>(buf, buf + size);
-}
-
-template <> double object::get<double>(interpreter &i) const {
-	double retVal;
-	int res = Tcl_GetDoubleFromObj(i.get(), obj_, &retVal);
-	if (res != TCL_OK) {
-		throw tcl_error(i.get());
-	}
-
-	return retVal;
-}
-
-template <> int object::get<int>(interpreter &i) const {
-	int retVal;
-
-	int res = Tcl_GetIntFromObj(i.get(), obj_, &retVal);
-	if (res != TCL_OK) {
-		throw tcl_error(i.get());
-	}
-
-	return retVal;
-}
-
-template <> long object::get<long>(interpreter &i) const {
-	long retVal;
-	int res = Tcl_GetLongFromObj(i.get(), obj_, &retVal);
-	if (res != TCL_OK) {
-		throw tcl_error(i.get());
-	}
-
-	return retVal;
-}
-
-template <> char const *object::get<char const *>(interpreter &) const { return get(); }
-
-template <> string object::get<string>(interpreter &) const {
-	int len;
-	char const *buf = Tcl_GetStringFromObj(obj_, &len);
-	return string(buf, buf + len);
-}
+template bool         object::get<bool        >(interpreter &i) const;
+template double       object::get<double      >(interpreter &i) const;
+template float        object::get<float       >(interpreter &i) const;
+template int          object::get<int         >(interpreter &i) const;
+template long         object::get<long        >(interpreter &i) const;
+template char const * object::get<char const *>(interpreter &i) const;
+template std::string  object::get<std::string >(interpreter &i) const;
+template std::vector<char> object::get<std::vector<char>>(interpreter &i) const;
 
 string object::asString() const { return get<string>(); }
-int object::asInt() const { return get<int>(); }
-bool object::asBool() const { return get<bool>(); }
-long object::asLong() const { return get<long>(); }
+int    object::asInt()    const { return get<int>(); }
+bool   object::asBool()   const { return get<bool>(); }
+long   object::asLong()   const { return get<long>(); }
 double object::asDouble() const { return get<double>(); }
 
 char const *object::get() const { return Tcl_GetString(obj_); }
@@ -496,45 +400,51 @@ char const *object::get(size_t &size) const {
 	return const_cast<char const *>(reinterpret_cast<char *>(buf));
 }
 
+bool object::is_list() const {
+	return obj_->typePtr && strcmp(obj_->typePtr->name, "list") == 0;
+}
+
 size_t object::size(interpreter &i) const {
 	int len;
-	int res = Tcl_ListObjLength(i.get(), obj_, &len);
-
-	if (res != TCL_OK) {
+	if (Tcl_ListObjLength(i.get(), obj_, &len) != TCL_OK) {
 		throw tcl_error(i.get());
 	}
-
 	return static_cast<size_t>(len);
 }
 
-object object::at(size_t index, interpreter &i) const {
+object object::at_ref(size_t index, interpreter & i) const {
 	Tcl_Obj *o;
-	int res = Tcl_ListObjIndex(i.get(), obj_, static_cast<int>(index), &o);
-	if (res != TCL_OK) {
+	if (Tcl_ListObjIndex(i.get(), obj_, static_cast<int>(index), &o) != TCL_OK) {
 		throw tcl_error(i.get());
 	}
 	if (o == NULL) {
 		throw tcl_error("Index out of range.");
 	}
+	return object(o, true);
+}
 
+object object::at(size_t index, interpreter &i) const {
+	Tcl_Obj *o;
+	if (Tcl_ListObjIndex(i.get(), obj_, static_cast<int>(index), &o) != TCL_OK) {
+		throw tcl_error(i.get());
+	}
+	if (o == NULL) {
+		throw tcl_error("Index out of range.");
+	}
 	return object(o);
 }
 
 object &object::append(object const &o, interpreter &i) {
-	int res = Tcl_ListObjAppendElement(i.get(), obj_, o.obj_);
-	if (res != TCL_OK) {
+	if (Tcl_ListObjAppendElement(i.get(), obj_, o.obj_) != TCL_OK) {
 		throw tcl_error(i.get());
 	}
-
 	return *this;
 }
 
 object &object::append_list(object const &o, interpreter &i) {
-	int res = Tcl_ListObjAppendList(i.get(), obj_, o.obj_);
-	if (res != TCL_OK) {
+	if (Tcl_ListObjAppendList(i.get(), obj_, o.obj_) != TCL_OK) {
 		throw tcl_error(i.get());
 	}
-
 	return *this;
 }
 
@@ -596,14 +506,12 @@ interpreter::~interpreter() {
 	if (owner_) {
 		// clear all callback info belonging to this interpreter
 		clear_definitions(interp_);
-
 		Tcl_DeleteInterp(interp_);
 	}
 }
 
 void interpreter::make_safe() {
-	int cc = Tcl_MakeSafe(interp_);
-	if (cc != TCL_OK) {
+	if (Tcl_MakeSafe(interp_) != TCL_OK) {
 		throw tcl_error(interp_);
 	}
 }
@@ -613,7 +521,6 @@ result interpreter::eval(string const &script) {
 	if (cc != TCL_OK) {
 		throw tcl_error(interp_);
 	}
-
 	return result(interp_);
 }
 
@@ -627,7 +534,6 @@ result interpreter::eval(object const &o) {
 	if (cc != TCL_OK) {
 		throw tcl_error(interp_);
 	}
-
 	return result(interp_);
 }
 
@@ -640,7 +546,6 @@ result interpreter::getVar(string const &variableName, string const &indexName) 
 	} else {
         Tcl_SetObjResult(interp_, obj);
 	}
-
 	return result(interp_);
 }
 
@@ -652,7 +557,6 @@ result interpreter::getVar(string const &variableName) {
 	} else {
         Tcl_SetObjResult(interp_, obj);
 	}
-
 	return result(interp_);
 }
 
@@ -700,55 +604,6 @@ void interpreter::clear_definitions(Tcl_Interp *interp) {
 	class_handlers.erase(interp);
 }
 
-#if 0
-void interpreter::clear_definitions(Tcl_Interp *interp) {
-	// delete all callbacks that were registered for given interpreter
-
-	{
-		callback_map::iterator it = callbacks.find(interp);
-
-		if (it == callbacks.end()) {
-			// no callbacks defined for this interpreter
-			return;
-		}
-
-		callback_interp_map &imap = it->second;
-		for (callback_interp_map::iterator it2 = imap.begin(); it2 != imap.end(); ++it2) {
-			Tcl_DeleteCommand(interp, it2->first.c_str());
-		}
-
-		callbacks.erase(interp);
-	}
-
-	// delete all constructors
-
-	{
-		callback_map::iterator it = constructors.find(interp);
-		if (it == constructors.end()) {
-			// no callbacks defined for this interpreter
-			return;
-		}
-
-		callback_interp_map &imap = it->second;
-		for (callback_interp_map::iterator it2 = imap.begin(); it2 != imap.end(); ++it2) {
-			Tcl_DeleteCommand(interp, it2->first.c_str());
-		}
-
-		callbacks.erase(interp);
-	}
-
-	// delete all call policies
-
-	call_policies.erase(interp);
-
-	// delete all object handlers
-	// (we have to assume that all living objects were destroyed,
-	// otherwise Bad Things will happen)
-
-	class_handlers.erase(interp);
-}
-#endif
-
 void interpreter::add_function(string const &name, callback_base * cb) {
 	Tcl_CreateObjCommand(interp_, name.c_str(), callback_handler, cb, 0);
 	all_definitions[interp_][name] = cb;
@@ -762,35 +617,59 @@ void interpreter::add_constructor(string const &name, shared_ptr<class_handler_b
 	constructor_handler_client_data_t * up = new constructor_handler_client_data_t;
 	up->cb = cb;
 	up->chb = chb;
-	up->pol = p;
 
 	Tcl_CreateObjCommand(interp_, name.c_str(), constructor_handler, up, 0);
 	all_definitions[interp_][name] = cb;
-
-	//Tcl_CreateObjCommand(interp_, name.c_str(), constructor_handler, static_cast<ClientData>(chb.get()), 0);
-
-	//constructors[interp_][name] = cb;
-	//call_policies[interp_][name] = p;
 }
 
 int tcl_cast<int>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	int res;
-	int cc = Tcl_GetIntFromObj(interp, obj, &res);
-	if (cc != TCL_OK) {
+	if (Tcl_GetIntFromObj(interp, obj, &res) != TCL_OK) {
 		throw tcl_error(interp);
 	}
-
 	return res;
 }
 
 long tcl_cast<long>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	long res;
-	int cc = Tcl_GetLongFromObj(interp, obj, &res);
-	if (cc != TCL_OK) {
+	if (Tcl_GetLongFromObj(interp, obj, &res) != TCL_OK) {
 		throw tcl_error(interp);
 	}
-
 	return res;
+}
+
+bool tcl_cast<bool>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
+	int res;
+	if (Tcl_GetBooleanFromObj(interp, obj, &res) != TCL_OK) {
+		throw tcl_error(interp);
+	}
+	return res != 0;
+}
+
+double tcl_cast<double>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
+	double res;
+	if (Tcl_GetDoubleFromObj(interp, obj, &res) != TCL_OK) {
+		throw tcl_error(interp);
+	}
+	return res;
+}
+
+float tcl_cast<float>::from(Tcl_Interp * interp, Tcl_Obj * obj, bool b) {
+	return tcl_cast<double>::from(interp, obj, b);
+}
+
+string tcl_cast<string>::from(Tcl_Interp *, Tcl_Obj *obj, bool) { return Tcl_GetString(obj); }
+char const *tcl_cast<char const *>::from(Tcl_Interp *, Tcl_Obj *obj, bool) { return Tcl_GetString(obj); }
+
+object tcl_cast<object>::from(Tcl_Interp * interp, Tcl_Obj * obj, bool) {
+	object o(obj);
+	o.set_interp(interp);
+	return o;
+}
+
+std::vector<char> tcl_cast<std::vector<char> >::from(Tcl_Interp * interp, Tcl_Obj * obj, bool asref) {
+	std::string s = tcl_cast<string>::from(interp, obj, asref);
+	return std::vector<char>(s.begin(), s.end());
 }
 
 namespace Tcl {
@@ -845,35 +724,4 @@ void post_process_policies(Tcl_Interp *interp, policies &pol, Tcl_Obj *CONST obj
 		}
 	}
 }
-}
-
-bool tcl_cast<bool>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
-	int res;
-	int cc = Tcl_GetBooleanFromObj(interp, obj, &res);
-	if (cc != TCL_OK) {
-		throw tcl_error(interp);
-	}
-
-	return res != 0;
-}
-
-double tcl_cast<double>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
-	double res;
-	int cc = Tcl_GetDoubleFromObj(interp, obj, &res);
-	if (cc != TCL_OK) {
-		throw tcl_error(interp);
-	}
-
-	return res;
-}
-
-string tcl_cast<string>::from(Tcl_Interp *, Tcl_Obj *obj, bool) { return Tcl_GetString(obj); }
-
-char const *tcl_cast<char const *>::from(Tcl_Interp *, Tcl_Obj *obj, bool) { return Tcl_GetString(obj); }
-
-object tcl_cast<object>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
-	object o(obj);
-	o.set_interp(interp);
-
-	return o;
 }

@@ -138,6 +138,7 @@ class object {
 
 	// (logically) non-modifying members
 
+	//template <typename T> T get(interpreter &i = *interpreter::defaultInterpreter) const;
 	template <typename T> T get(interpreter &i = *interpreter::defaultInterpreter) const;
 
 	char const *get() const;			 // string get
@@ -145,7 +146,10 @@ class object {
 
 	size_t size(interpreter &i = *interpreter::defaultInterpreter) const; // returns list length
 	object at(size_t index, interpreter &i = *interpreter::defaultInterpreter) const;
+	object at_ref(size_t index, interpreter &i = *interpreter::defaultInterpreter) const;
 
+	bool is_list() const;
+	
 	Tcl_Obj *get_object() const { return obj_; }
 
 	// modifying members
@@ -188,7 +192,7 @@ class object {
 		return maybe_object<object>(o, interp_, std::string(name), idx);
 	}
 
-	const bool exists(std::string idx) const {
+	bool exists(std::string idx) const {
 		Tcl_Obj *array = obj_;
 		Tcl_Obj *o = Tcl_GetVar2Ex(interp_, Tcl_GetString(array), idx.c_str(), 0);
 		return (o != 0);
@@ -234,7 +238,9 @@ class object {
 	Tcl_Interp *interp_;
 };
 
+
 // available specializations for object::get
+#if 0
 template <> bool object::get<bool>(interpreter &i) const;
 template <> double object::get<double>(interpreter &i) const;
 template <> int object::get<int>(interpreter &i) const;
@@ -242,5 +248,8 @@ template <> long object::get<long>(interpreter &i) const;
 template <> char const *object::get<char const *>(interpreter &i) const;
 template <> std::string object::get<std::string>(interpreter &i) const;
 template <> std::vector<char> object::get<std::vector<char>>(interpreter &i) const;
+#endif
+
+
 
 #endif /* CPPTCL_OBJECT_H */

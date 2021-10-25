@@ -54,8 +54,6 @@ If you create a Tcl command that's the same name as a command that already exist
 
 You probably noticed that the exposed functions can have parameters and can return values.
 
-Functions with up to 9 parameters can be exposed.
-
 At the moment, parameters and the return value of exposed functions can have the following types:
 
 *   std::string, char const *  
@@ -63,6 +61,7 @@ At the moment, parameters and the return value of exposed functions can have the
 *   int,
 *   long,
 *   bool,
+*   float,
 *   double,
 *   pointer to arbitrary type
 *   [object](objects.md)  
