@@ -220,6 +220,11 @@ policies &policies::sink(int index) {
 	return *this;
 }
 
+policies & policies::options(string const & options) {
+	options_ = options;
+	return *this;
+}
+
 #if 0
 policies &policies::variadic() {
 	variadic_ = true;
@@ -237,6 +242,8 @@ policies Tcl::factory(string const &name) { return policies().factory(name); }
 policies Tcl::sink(int index) { return policies().sink(index); }
 
 //policies Tcl::variadic() { return policies().variadic(); }
+
+policies Tcl::options(std::string const & opt) { return policies().options(opt); }
 
 policies Tcl::usage(string const &message) { return policies().usage(message); }
 

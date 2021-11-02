@@ -6,6 +6,7 @@ include(cmake/version.cmake)
 load_git_properties(cpptcl ${CMAKE_BINARY_DIR}/generated)
 
 set(CPPTCL_VERSION 2.2.5)
+set(CMAKE_CXX_STANDARD 17)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to Release as none was specified.")
@@ -71,7 +72,7 @@ list(APPEND HDRS ${cpptcl_SOURCE_DIR}/cpptcl/version.h)
 
 add_library(cpptcl SHARED ${SRCS} ${HDRS} ${HDRS_DETAILS})
 add_library(cpptcl::cpptcl ALIAS cpptcl)
-target_compile_features(cpptcl PUBLIC cxx_std_11)
+target_compile_features(cpptcl PUBLIC cxx_std_17)
 set_target_properties(cpptcl PROPERTIES
 	CXX_EXTENSIONS OFF
 	CXX_STANDARD_REQUIRED ON)
@@ -85,7 +86,7 @@ target_link_libraries(cpptcl PUBLIC ${TCL_STUB_LIBRARY})
 
 add_library(cpptcl_static STATIC ${SRCS} ${HDRS} ${HDRS_DETAILS})
 add_library(cpptcl::cpptcl_static ALIAS cpptcl_static)
-target_compile_features(cpptcl_static PUBLIC cxx_std_11)
+target_compile_features(cpptcl_static PUBLIC cxx_std_17)
 set_target_properties(cpptcl_static PROPERTIES
 	POSITION_INDEPENDENT_CODE ON
 	CXX_EXTENSIONS OFF
@@ -99,7 +100,7 @@ target_include_directories(cpptcl_static PUBLIC ${TCL_INCLUDE_PATH})
 
 add_library(cpptcl_runtime STATIC ${cpptcl_SOURCE_DIR}/cpptcl_runtime.c)
 add_library(cpptcl::cpptcl_runtime ALIAS cpptcl_runtime)
-target_compile_features(cpptcl_runtime PUBLIC cxx_std_11)
+target_compile_features(cpptcl_runtime PUBLIC cxx_std_17)
 set_target_properties(cpptcl_runtime PROPERTIES
 	POSITION_INDEPENDENT_CODE ON
 	CXX_EXTENSIONS OFF
