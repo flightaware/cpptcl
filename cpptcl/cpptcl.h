@@ -61,6 +61,9 @@ class tcl_error : public std::runtime_error {
 	explicit tcl_error(Tcl_Interp *interp) : std::runtime_error(Tcl_GetString(Tcl_GetObjResult(interp))) {}
 };
 
+class tcl_usage_message_printed {
+};
+
 // call policies
 
 struct policies {
@@ -1527,7 +1530,7 @@ void callback_v<Cparm, Fn, R, Ts...>::invoke(void * pv, Tcl_Interp * interp, int
 		std::cerr << "\n";
 	}
 	
-	if (argc == ai + 1 && strcmp(Tcl_GetString(argv[ai]), "-help") == 0) {
+	if (argc == ai + 1 && strcmp(Tcl_GetString(argv[ai]), "-help") == 0 && std::find(opts_, opts_ + num_gopt, "help") == opts_ + num_gopt) {
 		if (num_gopt) {
 			std::cerr << Tcl_GetString(argv[0]);
 			for (int oi = 0; oi < num_gopt; ++oi) {
@@ -1577,7 +1580,12 @@ void callback_v<Cparm, Fn, R, Ts...>::invoke(void * pv, Tcl_Interp * interp, int
 		}
 	}
 	check_params_no(argc - ai, sizeof...(Ts) - (has_variadic_ || policies_.variadic_ ? 1 : 0) - num_gopt - num_opt, has_variadic_ || policies_.variadic_ ? -1 : sizeof...(Ts) - num_gopt, policies_.usage_);
-	do_invoke(std::make_index_sequence<sizeof... (Ts)>(), (C *) pv, interp, argc - ai, argv + ai, num_gopt, getopt_argv, policies_, void_return<std::is_same<R, void>::value>());
+	try {
+		do_invoke(std::make_index_sequence<sizeof... (Ts)>(), (C *) pv, interp, argc - ai, argv + ai, num_gopt, getopt_argv, policies_, void_return<std::is_same<R, void>::value>());
+	} catch (tcl_usage_message_printed & e) {
+	} catch (...) {//std::exception & e) {
+		throw;
+	}
 	post_process_policies(interp, policies_, argv + ai, false);
 }
 }
