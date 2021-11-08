@@ -233,7 +233,36 @@ class object {
 	// helper function used from copy constructors
 	void init(Tcl_Obj *o, bool shared);
 
-  public:
+	static Tcl_Obj * default_object_;
+	static void static_initialize() {
+		default_object_ = Tcl_NewObj();
+		Tcl_IncrRefCount(default_object_);
+	}
+	void dupshared() {
+		if (Tcl_IsShared(obj_)) {
+			Tcl_Obj * newo = Tcl_DuplicateObj(obj_);
+			Tcl_IncrRefCount(newo);
+			Tcl_DecrRefCount(obj_);
+			obj_ = newo;
+		}
+	}
+ public:
+	static object make() {
+		//if (! default_object_) {
+		//	static_initialize();
+		//}
+		return object().duplicate();
+	}
+	void disown() {
+		Tcl_DecrRefCount(obj_);
+	}
+	void reown() {
+		Tcl_IncrRefCount(obj_);
+	}
+	object duplicate() const;
+	bool shared() const {
+		return Tcl_IsShared(obj_);
+	}
 	Tcl_Obj *obj_;
 	Tcl_Interp *interp_;
 };

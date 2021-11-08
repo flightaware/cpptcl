@@ -25,6 +25,18 @@ struct constructor_handler_client_data_t {
 	shared_ptr<class_handler_base> chb;
 };
 
+struct method_handler_client_data {
+	void * obj;
+	class_handler_base * chb;
+	bool unroll;
+	Tcl_Interp * interp;
+};
+
+struct managed_method_handler_client_data {
+	void * obj;
+	object_cmd_base * cb;
+};
+
 result::result(Tcl_Interp *interp) : interp_(interp) {}
 
 result::operator bool()   const { return tcl_cast<bool  >::from(interp_, Tcl_GetObjResult(interp_)); }
@@ -36,6 +48,10 @@ result::operator string() const {
 	return Tcl_GetString(obj);
 }
 result::operator object() const { return object(Tcl_GetObjResult(interp_)); }
+
+void result::reset() {
+	Tcl_ResetResult(interp_);
+}
 
 void details::set_result(Tcl_Interp *interp, bool b         ) { Tcl_SetObjResult(interp, Tcl_NewBooleanObj(b)); }
 void details::set_result(Tcl_Interp *interp, int i          ) { Tcl_SetObjResult(interp, Tcl_NewIntObj(i)); }
@@ -131,7 +147,7 @@ extern "C" int callback_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl
 	callback_base * cb = (callback_base *) cd;
 	
 	try {
-		cb->invoke(nullptr, interp, objc, objv);
+		cb->invoke(nullptr, interp, objc, objv, false);
 		//post_process_policies(interp, cdp->second, objv, false);
 	} catch (exception const &e) {
 		Tcl_SetObjResult(interp, Tcl_NewStringObj(const_cast<char *>(e.what()), -1));
@@ -150,22 +166,27 @@ extern "C" int object_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_O
 	// which is responsible for managing commands for
 	// objects of a given type
 
-	class_handler_base *chb = reinterpret_cast<class_handler_base *>(cd);
+	auto cdd = reinterpret_cast<method_handler_client_data *>(cd);
+
+	//class_handler_base *chb = reinterpret_cast<class_handler_base *>(cd);
 
 	// the command name has the form 'pXXX' where XXX is the address
 	// of the "this" object
 
+#if 0
 	string const str(Tcl_GetString(objv[0]));
 	istringstream ss(str);
 	char dummy;
 	void *p;
 	ss >> dummy >> p;
-
+#endif
+	
 	try {
 		//string methodName(Tcl_GetString(objv[1]));
 		//policies &pol = chb->get_policies(methodName);
-
-		chb->invoke(p, interp, objc, objv);
+		
+		cdd->chb->invoke(cdd->obj, interp, objc, objv, false);
+		//chb->invoke(p, interp, objc, objv);
 
 		//post_process_policies(interp, pol, objv, true);
 	} catch (exception const &e) {
@@ -179,6 +200,32 @@ extern "C" int object_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_O
 	return TCL_OK;
 }
 
+extern "C" int managed_method_handler(ClientData cd, Tcl_Interp * interp, int objc, Tcl_Obj *CONST objv[]) {
+	auto cdd = reinterpret_cast<managed_method_handler_client_data *>(cd);
+	
+	try {
+		cdd->cb->invoke(cdd->obj, interp, objc, objv, true);
+	} catch (std::exception & e) {
+		Tcl_SetObjResult(interp, Tcl_NewStringObj(const_cast<char *>(e.what()), -1));
+		return TCL_ERROR;
+	} catch (...) {
+		Tcl_SetObjResult(interp, Tcl_NewStringObj("Unknown error.", -1));
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+static void method_handler_client_data_delete(ClientData cd) {
+	auto * p = reinterpret_cast<method_handler_client_data *>(cd);
+	if (p->unroll) {
+		std::ostringstream oss;
+		oss << 'p' << p->obj;
+		p->chb->uninstall_methods(p->interp, oss.str().c_str());
+	}
+	delete p;
+}
+	
 // generic "constructor" command
 extern "C" int constructor_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
 	// here, client data points to the singleton object
@@ -188,13 +235,111 @@ extern "C" int constructor_handler(ClientData cd, Tcl_Interp *interp, int objc, 
 	constructor_handler_client_data_t * up = (constructor_handler_client_data_t *) cd;
 
 	try {
-		up->cb->invoke(nullptr, interp, objc, objv);
+		up->cb->invoke(nullptr, interp, objc, objv, false);
 
 		// if everything went OK, the result is the address of the
 		// new object in the 'pXXX' form
 		// - we can create a new command with this name
 
-		Tcl_CreateObjCommand(interp, Tcl_GetString(Tcl_GetObjResult(interp)), object_handler, static_cast<ClientData>(up->chb.get()), 0);
+		// convert it back to a pointer for faster method calls
+		// object creation could be sped up by getting the raw pointer across
+		string const str(Tcl_GetString(Tcl_GetObjResult(interp)));
+		istringstream ss(str);
+		char dummy;
+		void *p;
+		ss >> dummy >> p;
+
+		method_handler_client_data * cd = new method_handler_client_data;
+		cd->obj = p;
+		cd->chb = up->chb.get();
+		cd->unroll = false;
+		cd->interp = nullptr;
+		
+		//Tcl_CreateObjCommand(interp, Tcl_GetString(Tcl_GetObjResult(interp)), object_handler, static_cast<ClientData>(up->chb.get()), 0);
+		Tcl_CreateObjCommand(interp, Tcl_GetString(Tcl_GetObjResult(interp)), object_handler, static_cast<ClientData>(cd), method_handler_client_data_delete);
+	} catch (exception const &e) {
+		Tcl_SetResult(interp, const_cast<char *>(e.what()), TCL_VOLATILE);
+		return TCL_ERROR;
+	} catch (...) {
+		Tcl_SetObjResult(interp, Tcl_NewStringObj("Unknown error.", -1));
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+extern "C" int managed_constructor_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
+	// here, client data points to the singleton object
+	// which is responsible for managing commands for
+	// objects of a given type
+
+	constructor_handler_client_data_t * up = (constructor_handler_client_data_t *) cd;
+
+	try {
+		bool unroll = false;
+		bool nocommand = false;
+
+		Tcl_Obj ** objv2 = nullptr;
+		if (objc > 1) {
+			const char * arg1 = Tcl_GetString(objv[1]);
+
+			if (strcmp(arg1, "-methods") == 0) {
+				unroll = true;
+			} else if (strcmp(arg1, "-nocommand") == 0) {
+				nocommand = true;
+			}
+
+			if ((nocommand || unroll)) {
+				if (objc > 2) {
+					objv2 = new Tcl_Obj *[objc - 1];
+					objv2[0] = objv[0];
+					for (int j = 2; j < objc; ++j) {
+						objv2[j - 1] = objv[j];
+					}
+				}
+				--objc;
+			}
+		}
+
+		if (objv2) {
+			up->cb->invoke(nullptr, interp, objc, objv2, false);
+			delete[] objv2;
+		} else {
+			up->cb->invoke(nullptr, interp, objc, objv, false);
+		}
+
+		//std::cerr << " managed construct " << Tcl_GetObjResult(interp)->refCount << "\n";
+		
+		// if everything went OK, the result is the address of the
+		// new object in the 'pXXX' form
+		// - we can create a new command with this name
+
+		string const str(Tcl_GetString(Tcl_GetObjResult(interp)));
+
+		istringstream ss(str);
+		char dummy;
+		void *p;
+		ss >> dummy >> p;
+
+		method_handler_client_data * cd = new method_handler_client_data;
+		cd->obj = p;
+		cd->chb = up->chb.get();
+		cd->unroll = unroll;
+		cd->interp = interp;
+		
+		//Tcl_CreateObjCommand(interp, cmd.c_str(), object_handler, static_cast<ClientData>(up->chb.get()), 0);
+
+		if (unroll) {
+			//std::cerr << "install methods\n";
+			up->chb->install_methods(interp, Tcl_GetString(Tcl_GetObjResult(interp)), p);
+		}
+
+		if (! nocommand) {
+			std::string cmd = Tcl_GetString(Tcl_GetObjResult(interp));
+			cmd += ".";
+			Tcl_CreateObjCommand(interp, cmd.c_str(), object_handler, static_cast<ClientData>(cd), method_handler_client_data_delete);
+			//std::cerr << " managed construct2 " << Tcl_GetObjResult(interp)->refCount << "\n";
+		}
 	} catch (exception const &e) {
 		Tcl_SetResult(interp, const_cast<char *>(e.what()), TCL_VOLATILE);
 		return TCL_ERROR;
@@ -252,7 +397,45 @@ class_handler_base::class_handler_base() {
 	//policies_["-delete"] = policies();
 }
 
-void class_handler_base::register_method(string const & name, shared_ptr<object_cmd_base> ocb) {
+static void managed_method_client_data_delete(ClientData cd) {
+	auto * p = reinterpret_cast<managed_method_handler_client_data *>(cd);
+	delete[] p;
+}
+
+void class_handler_base::uninstall_methods(Tcl_Interp * interp, const char * prefix) {
+	char buf[1024];
+	strcpy(buf, prefix);
+	char * p = buf + strlen(buf);
+	*p = '.'; ++p;
+	
+	for (auto it = methods_.begin(); it != methods_.end(); ++it) {
+		strcpy(p, it->first.c_str());
+		Tcl_DeleteCommand(interp, buf);
+		//throw tcl_error(std::string("cannot register method ") + buf + " on object creation of managed class");
+		//}
+	}
+}
+
+void class_handler_base::install_methods(Tcl_Interp * interp, const char * prefix, void * obj) {
+	char buf[1024];
+	strcpy(buf, prefix);
+	char * p = buf + strlen(buf);
+	*p = '.'; ++p;
+	
+	managed_method_handler_client_data * cds = new managed_method_handler_client_data[methods_.size()];
+	int ix = 0;
+	for (auto it = methods_.begin(); it != methods_.end(); ++it, ++ix) {
+		strcpy(p, it->first.c_str());
+		cds[ix].obj = obj;
+		cds[ix].cb  = it->second.get();
+		//std::cerr << "install method " << buf << "\n";
+		Tcl_CreateObjCommand(interp, buf, managed_method_handler, static_cast<ClientData>(cds + ix), ix == 0 ? managed_method_client_data_delete : nullptr);
+		//throw tcl_error(std::string("cannot register method ") + buf + " on object creation of managed class");
+		//}
+	}
+}
+
+void class_handler_base::register_method(string const & name, shared_ptr<object_cmd_base> ocb, Tcl_Interp * interp, bool managed) {
 	methods_[name] = ocb;
 	//policies_[name] = p;
 }
@@ -268,8 +451,11 @@ policies &class_handler_base::get_policies(string const &name) {
 }
 #endif
 
+Tcl_Obj * object::default_object_ = nullptr;
+
 object::object() : interp_(0) {
-	obj_ = Tcl_NewObj();
+	if (! default_object_) { static_initialize(); }
+	obj_ = default_object_;
 	Tcl_IncrRefCount(obj_);
 }
 
@@ -313,7 +499,7 @@ object::object(Tcl_Obj * o, bool shared) : interp_(0) { init(o, shared); }
 object::object(object const & other, bool shared) : interp_(other.get_interp()) { init(other.obj_, shared); }
 
 void object::init(Tcl_Obj * o, bool shared) {
-	if (shared) {
+	if (true || shared) {
 		obj_ = o;
 	} else {
 		obj_ = Tcl_DuplicateObj(o);
@@ -324,42 +510,85 @@ void object::init(Tcl_Obj * o, bool shared) {
 object::~object() { Tcl_DecrRefCount(obj_); }
 
 object &object::assign(bool b) {
-	Tcl_SetBooleanObj(obj_, b);
+	if (Tcl_IsShared(obj_)) {
+		Tcl_DecrRefCount(obj_);
+		obj_ = Tcl_NewBooleanObj(b ? 1 : 0);
+		Tcl_IncrRefCount(obj_);
+	} else {
+		Tcl_SetBooleanObj(obj_, b ? 1 : 0);
+	}
 	return *this;
 }
 
 object &object::resize(size_t size) {
+	dupshared();
 	Tcl_SetByteArrayLength(obj_, static_cast<int>(size));
 	return *this;
 }
 
 object &object::assign(char const *buf, size_t size) {
-	Tcl_SetByteArrayObj(obj_, reinterpret_cast<unsigned char const *>(buf), static_cast<int>(size));
+	if (Tcl_IsShared(obj_)) {
+		Tcl_DecrRefCount(obj_);
+		obj_ = Tcl_NewByteArrayObj(reinterpret_cast<unsigned char const *>(buf), static_cast<int>(size));
+		Tcl_IncrRefCount(obj_);
+	} else {
+		Tcl_SetByteArrayObj(obj_, reinterpret_cast<unsigned char const *>(buf), static_cast<int>(size));
+	}
 	return *this;
 }
 
 object &object::assign(double d) {
-	Tcl_SetDoubleObj(obj_, d);
+	if (Tcl_IsShared(obj_)) {
+		Tcl_DecrRefCount(obj_);
+		obj_ = Tcl_NewDoubleObj(d);
+		Tcl_IncrRefCount(obj_);
+	} else {
+		Tcl_SetDoubleObj(obj_, d);
+	}
 	return *this;
 }
 
 object &object::assign(int i) {
-	Tcl_SetIntObj(obj_, i);
+	if (Tcl_IsShared(obj_)) {
+		Tcl_DecrRefCount(obj_);
+		obj_ = Tcl_NewIntObj(i);
+		Tcl_IncrRefCount(obj_);
+	} else {
+		Tcl_SetIntObj(obj_, i);
+	}
 	return *this;
 }
 
 object &object::assign(long l) {
-	Tcl_SetLongObj(obj_, l);
+	if (Tcl_IsShared(obj_)) {
+		Tcl_DecrRefCount(obj_);
+		obj_ = Tcl_NewLongObj(l);
+		Tcl_IncrRefCount(obj_);
+	} else {
+		Tcl_SetLongObj(obj_, l);
+	}
 	return *this;
 }
 
 object &object::assign(char const *s) {
-	Tcl_SetStringObj(obj_, s, -1);
+	if (Tcl_IsShared(obj_)) {
+		Tcl_DecrRefCount(obj_);
+		obj_ = Tcl_NewStringObj(s, -1);
+		Tcl_IncrRefCount(obj_);
+	} else {
+		Tcl_SetStringObj(obj_, s, -1);
+	}
 	return *this;
 }
 
 object &object::assign(string const &s) {
-	Tcl_SetStringObj(obj_, s.data(), static_cast<int>(s.size()));
+	if (Tcl_IsShared(obj_)) {
+		Tcl_DecrRefCount(obj_);
+		obj_ = Tcl_NewStringObj(s.data(), static_cast<int>(s.size()));
+		Tcl_IncrRefCount(obj_);
+	} else {
+		Tcl_SetStringObj(obj_, s.data(), static_cast<int>(s.size()));
+	}
 	return *this;
 }
 
@@ -371,6 +600,11 @@ object &object::assign(object const &other) {
 object &object::assign(Tcl_Obj *o) {
 	object(o).swap(*this);
 	return *this;
+}
+
+object object::duplicate() const {
+	Tcl_Obj * to = Tcl_DuplicateObj(obj_);
+	return object(to);
 }
 
 object &object::swap(object &other) {
@@ -442,6 +676,8 @@ object object::at(size_t index, interpreter &i) const {
 }
 
 object &object::append(object const &o, interpreter &i) {
+	dupshared();
+
 	if (Tcl_ListObjAppendElement(i.get(), obj_, o.obj_) != TCL_OK) {
 		throw tcl_error(i.get());
 	}
@@ -449,6 +685,8 @@ object &object::append(object const &o, interpreter &i) {
 }
 
 object &object::append_list(object const &o, interpreter &i) {
+	dupshared();
+
 	if (Tcl_ListObjAppendList(i.get(), obj_, o.obj_) != TCL_OK) {
 		throw tcl_error(i.get());
 	}
@@ -456,11 +694,11 @@ object &object::append_list(object const &o, interpreter &i) {
 }
 
 object &object::replace(size_t index, size_t count, object const &o, interpreter &i) {
+	dupshared();
 	int res = Tcl_ListObjReplace(i.get(), obj_, static_cast<int>(index), static_cast<int>(count), 1, &(o.obj_));
 	if (res != TCL_OK) {
 		throw tcl_error(i.get());
 	}
-
 	return *this;
 }
 
@@ -472,7 +710,7 @@ object &object::replace_list(size_t index, size_t count, object const &o, interp
 	if (res != TCL_OK) {
 		throw tcl_error(i.get());
 	}
-
+	dupshared();
 	res = Tcl_ListObjReplace(i.get(), obj_, static_cast<int>(index), static_cast<int>(count), objc, objv);
 	if (res != TCL_OK) {
 		throw tcl_error(i.get());
@@ -486,6 +724,10 @@ void object::set_interp(Tcl_Interp *interp) { interp_ = interp; }
 Tcl_Interp *object::get_interp() const { return interp_; }
 
 Tcl::interpreter *interpreter::defaultInterpreter = nullptr;
+
+void interpreter::unsetVar(std::string const & name) {
+	Tcl_UnsetVar(get_interp(), name.c_str(), 0);
+}
 
 interpreter::interpreter() : tin_(nullptr), tout_(nullptr), terr_(nullptr) {
 	interp_ = Tcl_CreateInterp();
@@ -628,6 +870,16 @@ void interpreter::add_constructor(string const &name, shared_ptr<class_handler_b
 	Tcl_CreateObjCommand(interp_, name.c_str(), constructor_handler, up, 0);
 	all_definitions[interp_][name] = cb;
 }
+
+void interpreter::add_managed_constructor(string const &name, shared_ptr<class_handler_base> chb, callback_base * cb, policies const &p) {
+	constructor_handler_client_data_t * up = new constructor_handler_client_data_t;
+	up->cb = cb;
+	up->chb = chb;
+
+	Tcl_CreateObjCommand(interp_, name.c_str(), managed_constructor_handler, up, 0);
+	all_definitions[interp_][name] = cb;
+}
+
 
 int tcl_cast<int>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	int res;
