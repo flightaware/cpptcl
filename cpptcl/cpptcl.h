@@ -24,6 +24,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -34,6 +35,7 @@
 #include <functional>
 #include <cstring>
 #include <typeindex>
+#include <optional>
 
 //
 // Using TCL stubs is the default behavior
@@ -56,9 +58,13 @@ namespace Tcl {
 // exception class used for reporting all Tcl errors
 
 class tcl_error : public std::runtime_error {
-  public:
-	explicit tcl_error(std::string const &msg) : std::runtime_error(msg) {}
-	explicit tcl_error(Tcl_Interp *interp) : std::runtime_error(Tcl_GetString(Tcl_GetObjResult(interp))) {}
+	std::string msg_;
+	void * backtrace_[16];
+	size_t backtrace_size_;
+public:
+	explicit tcl_error(std::string const &msg); //: std::runtime_error(msg) {}
+	explicit tcl_error(Tcl_Interp *interp);
+	const char * what() const throw();
 };
 
 class tcl_usage_message_printed {
@@ -85,12 +91,14 @@ struct policies {
 	bool variadic_;
 	std::string usage_;
 	std::string options_;
+	bool has_postprocess() {
+		return !factory_.empty() || ! sinks_.empty();
+	}
 };
 
 // syntax short-cuts
 policies factory(std::string const &name);
 policies sink(int index);
-//policies variadic();
 policies usage(std::string const &message);
 policies options(std::string const & options);
 
@@ -99,28 +107,15 @@ class object;
 
 void post_process_policies(Tcl_Interp *interp, policies &pol, Tcl_Obj *CONST objv[], bool isMethod);
 
+struct named_pointer_result {
+	std::string name;
+	void * p;
+	template <typename U>
+	named_pointer_result(std::string const & n, U * u) : name(n), p((void *) u) { }
+};
+
 namespace details {
 template <typename T> struct tcl_cast;
-
-template <typename T> struct tcl_cast<T *> {
-	static T *from(Tcl_Interp *, Tcl_Obj *obj, bool byReference) {
-		std::string s(Tcl_GetString(obj));
-		if (s.size() == 0) {
-			throw tcl_error("Expected pointer value, got empty string.");
-		}
-
-		if (s[0] != 'p') {
-			throw tcl_error("Expected pointer value.");
-		}
-
-		std::istringstream ss(s);
-		char dummy;
-		void *p;
-		ss >> dummy >> p;
-
-		return static_cast<T *>(p);
-	}
-};
 
 // the following partial specialization is to strip reference
 // (it returns a temporary object of the underlying type, which
@@ -169,6 +164,7 @@ void set_result(Tcl_Interp *interp, double d);
 void set_result(Tcl_Interp *interp, std::string const &s);
 void set_result(Tcl_Interp *interp, void *p);
 void set_result(Tcl_Interp *interp, object const &o);
+void set_result(Tcl_Interp *interp, named_pointer_result);
 
 // helper for checking for required number of parameters
 // (throws tcl_error when not met)
@@ -182,16 +178,18 @@ class callback_base {
   public:
 	virtual ~callback_base() {}
 
-	virtual void invoke(void * dummyp, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], bool object_dot_method) = 0;
+	virtual void invoke(void * p, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], bool object_dot_method) = 0;
+	virtual void install() = 0;
+	virtual void uninstall() = 0;
 };
 
 // base class for object command handlers
 // and for class handlers
-class object_cmd_base {
+class object_cmd_base : public callback_base {
   public:
 	// destructor not needed, but exists to shut up the compiler warnings
-	virtual ~object_cmd_base() {}
-	virtual void invoke(void *p, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], bool object_dot_method) = 0;
+	//virtual ~object_cmd_base() {}
+	//virtual void invoke(void *p, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], bool object_dot_method) = 0;
 };
 
 // base class for all class handlers, still abstract
@@ -201,14 +199,26 @@ class class_handler_base : public object_cmd_base {
 
 	class_handler_base();
 
-	void register_method(std::string const &name, std::shared_ptr<object_cmd_base> ocb, Tcl_Interp * interp, bool managed);
+	void register_method(std::string const &name, callback_base * ocb, Tcl_Interp * interp, bool managed);
 
 	//policies &get_policies(std::string const &name);
 
 	void install_methods(Tcl_Interp * interp, const char * prefix, void * obj);
 	void uninstall_methods(Tcl_Interp * interp, const char * prefix);
+	~class_handler_base() {
+		for (auto & r : methods_) {
+			delete r.second;
+			delete[] r.first;
+		}
+	}
 protected:
-	typedef std::map<std::string, std::shared_ptr<object_cmd_base> > method_map_type;
+	struct str_less {
+		bool operator()(const char * a, const char * b) const {
+			return strcmp(a, b) < 0;
+		}
+	};
+
+	typedef std::map<const char *, callback_base *, str_less> method_map_type;
 
 	// a map of methods for the given class
 	method_map_type methods_;
@@ -217,31 +227,28 @@ protected:
 };
 
 // class handler - responsible for executing class methods
-template <class C> class class_handler : public class_handler_base {
+template <class C>
+class class_handler : public class_handler_base {
   public:
 	virtual void invoke(void *pv, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], bool object_dot_method) {
-		C *p = static_cast<C *>(pv);
+		C * p = static_cast<C *>(pv);
 
-		//if (objc < 2) {
-		//	throw tcl_error(pol.usage_);
-		//}
-
-		std::string methodName(Tcl_GetString(objv[1]));
-		if (objc == 2 && methodName == "-delete") {
+		char * methodName = Tcl_GetString(objv[1]);
+		if (objc == 2 && strcmp(methodName, "-delete") == 0) {
 			Tcl_DeleteCommand(interp, Tcl_GetString(objv[0]));
 			delete p;
 			return;
 		}
 
-		// dispatch on the method name
-
 		method_map_type::iterator it = methods_.find(methodName);
 		if (it == methods_.end()) {
-			throw tcl_error("Method " + methodName + " not found.");
+			throw tcl_error("Method " + std::string(methodName) + " not found.");
 		}
 
 		it->second->invoke(pv, interp, objc, objv, false);
 	}
+	void install() { }
+	void uninstall() { }
 };
 
 } // details
@@ -253,16 +260,28 @@ struct optional {
 	T val;
 	bool valid;
 	operator bool() const { return valid; }
-	T const & operator*() const { return val; }
-	T const * operator->() const { return &val; }
+	T const & operator*() const {
+		if (!valid) {
+			throw tcl_error("retrieving value of unspecified optional attempted");
+		}
+		return val;
+	}
+	T const * operator->() const {
+		if (!valid) {
+			throw tcl_error("retrieving value of unspecified optional attempted");
+		}
+		return &val;
+	}
 	optional() : valid(false) { }
 	optional(T) : valid(false) { }
 	optional(T t, bool v) : val(t), valid(v) { }
+	operator std::optional<T>() { return valid ? std::optional<T>(val) : std::optional<T>(); }
 };
 
 template <typename T>
 struct getopt : public optional<T> {
 	using optional<T>::optional;
+	using optional<T>::operator std::optional<T>;
 };
 
 template <typename T>
@@ -297,6 +316,17 @@ struct is_basic_type {
 
 } // details
 
+template <typename ...Ts>
+struct overloaded {
+	std::tuple<Ts...> ts;
+};
+
+template <typename ...Ts>
+overloaded<Ts...> overload(Ts... ts) {
+	return overloaded<Ts...>{ { ts... } };
+};
+
+
 template <typename T>
 struct list {
 	interpreter * interp_;
@@ -315,14 +345,12 @@ struct list {
 
 	list(list const & o) : interp_(o.interp_), lo_(o.lo_), ot_(o.ot_), list_owner_(o.list_owner_) {
 		if (list_owner_) {
-			//std::cerr << "copy list\n";
 			Tcl_IncrRefCount(lo_);
 		}
 	}
 
 	~list() {
 		if (list_owner_) {
-			//std::cerr << "~list " << lo_->refCount << "\n";
 			Tcl_DecrRefCount(lo_);
 		}
 	}
@@ -353,8 +381,12 @@ struct list {
 	}
 
 	std::size_t size() const ;
-	return_t at(std::size_t ix) const;
+	return_t at(std::size_t ix) const {
+		return with_obj_at(ix).first;
+	}
 	return_t operator[](std::size_t ix) const { return at(ix); }
+	std::pair<return_t, Tcl_Obj *> with_obj_at(std::size_t ix) const;
+	Tcl_Obj * obj_at(std::size_t ix) const;
 };
 
 template <typename T>
@@ -388,11 +420,6 @@ struct variadic<variadic_compat_tag> : public policies {
 	variadic() {
 		variadic_ = true;
 	}
-};
-
-template <typename ...Ts>
-struct overload {
-	
 };
 
 namespace details {
@@ -459,7 +486,7 @@ struct all_lists {
 template <typename ...Ts>
 struct all_lists<any<Ts...> > : public all_lists_impl<Ts...> {
 };
-	
+
 template <typename ...Ts>
 struct any_impl {
 	Tcl_Obj * o_;
@@ -514,6 +541,8 @@ struct any : public details::any_impl<Ts...> {
 			Tcl_DecrRefCount(this->o_);
 		}
 	}
+
+	object as_object();
 	
 	operator bool() const {
 		for (int i = 0; i < sizeof...(Ts); ++i) {
@@ -524,13 +553,19 @@ struct any : public details::any_impl<Ts...> {
 	}
 
 	template <typename ...Fs>
-	void visit(Fs... f) const;
+	bool visit(Fs... f) const;
 	
 	template <typename TT>
 	typename std::conditional<details::is_list<TT>::value, TT, TT *>::type as() const;
 };
 
-template <typename ...Ts> struct init { };
+namespace details { struct init_default_tag { }; }
+
+template <typename ...Ts> struct init {
+	bool default_;
+	init() : default_(false) { }
+	init(details::init_default_tag) : default_(true) { }
+};
 
 namespace details {
 
@@ -624,7 +659,8 @@ struct getopt_index<Ix, Itarget, Ipos, T, Ts...> {
 template <typename ...Fs>
 struct visit_impl {
 	template <typename ...Ts>
-	static void invoke(any<Ts...> const &) {
+	static bool invoke(any<Ts...> const &) {
+		return false;
 	}
 };
 
@@ -635,32 +671,49 @@ struct argument_type {
 };
 template <bool strip_list, typename F, typename T, typename ...Ts>
 struct argument_type<strip_list, F, T, Ts...> {
-	typedef typename std::conditional<std::is_invocable<
-		F, typename std::conditional<strip_list, typename list_unpack<T>::type, T>::type *
-	>::value, T, typename argument_type<strip_list, F, Ts...>::type>::type type;
+	typedef typename std::conditional<strip_list, typename list_unpack<T>::type, T>::type arg1_t;
+
+	typedef typename std::conditional<
+		std::is_invocable<F, arg1_t *>::value || std::is_invocable<F, arg1_t *, Tcl_Obj *>::value,
+		T,
+		typename argument_type<strip_list, F, Ts...>::type
+	>::type type;
 };
 
 template <typename F, typename ...Fs>
 struct visit_impl<F, Fs...> {
 	template <typename ...Ts>
-	static void invoke(any<Ts...> const & a, F f, Fs... fs) {
+	static bool invoke(any<Ts...> const & a, F f, Fs... fs) {
 		typedef typename argument_type<false, F, Ts...>::type arg_t;
 		typedef typename argument_type<true,  F, Ts...>::type arg_list_t;
 
-		if constexpr (!std::is_same<arg_t, arg_list_t>::value && !std::is_same<arg_list_t, no_argument_match>::value) {
-			if (arg_list_t li = a.template as<arg_list_t>()) {
-				for (auto && i : li) {
-					f(i);
+		if constexpr (! std::is_same<arg_t, no_argument_match>::value || ! std::is_same<arg_list_t, no_argument_match>::value) {
+			if constexpr (!std::is_same<arg_t, arg_list_t>::value) {
+				if (arg_list_t li = a.template as<arg_list_t>()) {
+					if constexpr (std::is_invocable<F, decltype(li.at(0))>::value) {
+						for (auto && i : li) {
+							f(i);
+						}
+					} else if constexpr (std::is_invocable<F, decltype(li.at(0)), Tcl_Obj *>::value) {
+						for (std::size_t i = 0; i < li.size(); ++i) {
+							auto both = li.with_obj_at(i);
+							f(both.first, both.second);
+						}
+					}
+					return true;
 				}
-				return;
-			}
-		} else if constexpr (!std::is_same<arg_t, no_argument_match>::value) {
-			if (arg_t * p = a.template as<arg_t>()) {
-				f(p);
-				return;
+			} else {
+				if (arg_t * p = a.template as<arg_t>()) {
+					if constexpr (std::is_invocable<F, arg_t *>::value) {
+						f(p);
+					} else if constexpr (std::is_invocable<F, arg_t *, Tcl_Obj *>::value) {
+						f(p, nullptr);
+					}
+					return true;
+				}
 			}
 		}
-		visit_impl<Fs...>::invoke(a, fs...);
+		return visit_impl<Fs...>::invoke(a, fs...);
 	}
 };
 inline std::string tcl_typename(Tcl_Obj * o) {
@@ -670,36 +723,42 @@ inline std::string tcl_typename(Tcl_Obj * o) {
 
 template <typename ...Ts>
 template <typename ...Fs>
-void any<Ts...>::visit(Fs... f) const {
-	details::visit_impl<Fs...>::invoke(*this, f...);
+bool any<Ts...>::visit(Fs... f) const {
+	return details::visit_impl<Fs...>::invoke(*this, f...);
 }
 
 namespace details {
 template <int I, typename ...Ts>
 struct generate_hasarg {
-	static void invoke(bool * arr, std::string *, const char *) { }
+	static void invoke(bool * arr, std::string *, std::string *, const char *, bool) { }
 };
 template <int I, typename T, typename ...Ts>
 struct generate_hasarg<I, T, Ts...> {
-	static void invoke(bool * arr, std::string * opts, const char * p) {
+	static void invoke(bool * arr, std::string * opts, std::string * defaults, const char * p, bool may_have_defaults) {
 		if (!is_getopt<T>::value) {
-			generate_hasarg<I, Ts...>::invoke(arr, opts, p);
+			generate_hasarg<I, Ts...>::invoke(arr, opts, defaults, p, may_have_defaults);
 		} else {
 			arr[I] = !std::is_same<typename remove_rc<T>::type, getopt<bool> >::value;
 			while (*p && isspace(*p)) ++p;
 			if (p) {
 				const char * pend = p;
-				while (*pend && !isspace(*pend)) ++pend;
+				while (*pend && !isspace(*pend) && *pend != '=') ++pend;
 				opts[I] = std::string(p, pend - p);
-				
-				generate_hasarg<I + 1, Ts...>::invoke(arr, opts, pend);
+				if (*pend == '=') {
+					if (!may_have_defaults) {
+						throw tcl_error("function is not allowed to have defaults");
+					}
+					++pend; p = pend;
+					while (*pend && !isspace(*pend)) ++pend;
+					defaults[I] = std::string(p, pend - p);
+				}
+				generate_hasarg<I + 1, Ts...>::invoke(arr, opts, defaults, pend, may_have_defaults);
 			} else {
 				std::cerr << "option error\n";
 			}
 		}
 	}
 };
-
 
 template <int I>
 struct no_type { };
@@ -792,7 +851,6 @@ struct subtype<0, variadic<T>, false> {
 	typedef typename subtype<0, T>::type type;
 };
 
-
 template <typename T>
 struct num_subtypes {
 	static const int value = 1 + 100000 - subtype_notype_tag<typename subtype<100000, T>::type>::value;
@@ -803,7 +861,6 @@ struct generate_argtypes {
 	static void invoke(interpreter *, Tcl_ObjType **) { }
 	static const int length = 0;
 };
-
 
 template <typename T, bool Last>
 struct fix_variadic_return {
@@ -844,33 +901,148 @@ TT  do_cast(ppack<Ts...>, bool variadic, Tcl_Interp * interp, int objc, Tcl_Obj 
 
 struct no_init_type {};
 struct no_class { };
+struct no_class_lambda { };
+
 
 template <typename C>
 struct class_lambda { };
 
-template <typename C>
-struct class_lambda_unpack {
-	typedef C type;
-};
-template <typename C>
-struct class_lambda_unpack<class_lambda<C> > {
-	typedef C type;
+template <typename ...Convs>
+struct conversions {
 };
 
-template <typename C>
-struct is_class_lambda {
-	static const bool value = !std::is_same<C, typename class_lambda_unpack<C>::type>::value;
+template <int ...Ixs>
+struct conversion_ix { };
+template <typename ...Ts>
+struct conversion_t { };
+
+template <int I, int N, typename Ix, typename T>
+struct make_conversions {
 };
 
-template <typename Cparm, typename Fn, typename R, typename ...Ts> class callback_v : public std::conditional<std::is_same<Cparm, no_class>::value, details::callback_base, details::object_cmd_base>::type {
-	typedef typename class_lambda_unpack<Cparm>::type C;
+struct default_conversion {
+};
+
+struct conversions_end {
+};
+
+struct conversion_error {
+};
+
+template <int N, int ...Ixs, typename ...Ts>
+struct make_conversions<N, N, conversion_ix<Ixs...>, conversion_t<Ts...> > {
+	typedef conversions_end type;
+	typedef conversions_end recurse;
+};
+
+template <int I, int N, int Ix, int ...Ixs, typename T, typename ...Ts>
+struct make_conversions<I, N, conversion_ix<Ix, Ixs...>, conversion_t<T, Ts...> > {
+	typedef typename std::conditional<Ix == I, T, default_conversion>::type type;
+	typedef typename std::conditional
+	<Ix == I,
+	 make_conversions<I + 1, N, conversion_ix<Ixs...>, conversion_t<Ts...> >,
+	 make_conversions<I + 1, N, conversion_ix<I, Ixs...>, conversion_t<T, Ts...> > >::type recurse;
+};
+
+template <int I, typename Conv>
+struct conversion_at {
+	typedef typename std::conditional
+	<I == 0, typename Conv::type, typename conversion_at<I + 1, typename Conv::recurse>::type>::type type;
+};
+
+template <int I>
+struct conversion_at<I, conversions_end> {
+	typedef conversion_error type;
+};
+
+struct callback_empty_base { };
+template <typename T, bool P>
+struct callback_no_baseclass { }; // policy tag
+
+template <typename T>
+struct callback_base_type {
+	typedef object_cmd_base type;
+};
+template <>
+struct callback_base_type<no_class> {
+	typedef callback_base type;
+};
+template <typename T>
+struct callback_free_method { }; // policy tag
+
+template <typename T, bool P>
+struct callback_postproc { }; // policy tag
+
+template <typename T, typename P>
+struct callback_attributes { };
+
+template <typename T>
+struct callback_base_type<callback_no_baseclass<T, true> > {
+	typedef callback_empty_base type;
+};
+
+template <bool cold_ = false>
+struct attributes {
+	static const bool cold = cold_;
+};
+template <typename T>
+struct is_attribute {
+	static const bool value = false;
+};
+
+template <bool cold>
+struct is_attribute<attributes<cold> > {
+	static const bool value = true;
+};
+
+template <typename T>
+struct callback_policy_unpack {
+	typedef T type;
+	static const bool no_base      = false;
+	static const bool free_method  = false;
+	static const bool class_lambda = false;
+	static const bool postproc     = true;
+	typedef attributes<>             attr;
+};
+
+template <typename T, bool P>
+struct callback_policy_unpack<callback_no_baseclass<T, P> > : public callback_policy_unpack<T> {
+	static const bool no_base = P;
+};
+template <typename T, bool P>
+struct callback_policy_unpack<callback_postproc<T, P> > : public callback_policy_unpack<T> {
+	static const bool postproc = P;
+};
+
+template <typename T, typename A>
+struct callback_policy_unpack<callback_attributes<T, A> > : public callback_policy_unpack<T> {
+	typedef A attr;
+};
+
+template <typename T>
+struct callback_policy_unpack<callback_free_method<T> > : public callback_policy_unpack<T> {
+	static const bool free_method = true;
+};
+template <typename T>
+struct callback_policy_unpack<class_lambda<T> > : public callback_policy_unpack<T> {
+	static const bool class_lambda = true;
+};
+
+template <typename Cparm, typename Conv, typename Fn, typename R, typename ...Ts>
+class callback_v : public callback_base_type<Cparm>::type {
+	typedef callback_v this_t;
+
+	typedef callback_policy_unpack<Cparm> pol_t;
+	typedef typename pol_t::type C;
+
+	static const bool may_have_defaults = false;
 
 	typedef Fn functor_type;
 	policies policies_;
 	functor_type f_;
 
 	static const int num_opt = num_getopt<Ts...>::value;
-	std::string opts_[num_opt];
+	std::string opts_[num_opt], defaults_[num_opt];
 
 	bool has_arg_[num_opt + 1] = { false };
 
@@ -879,64 +1051,219 @@ template <typename Cparm, typename Fn, typename R, typename ...Ts> class callbac
 	Tcl_ObjType * argument_types_all_[generate_argtypes<0, Ts...>::length + 1];
 	
 	interpreter * interpreter_;
- public :
-	callback_v(interpreter * i, functor_type f, std::string const & name, policies const & pol) : interpreter_(i), policies_(pol), f_(f) {
+	Conv conv_;
+
+	std::string name_;
+
+	static const bool cold = pol_t::attr::cold; //has_attribute<attribute_cold, Extra...>::value;//false && pol_t::class_lambda;
+public :
+	static const int num_arguments = (std::is_same<C, no_class>::value || pol_t::free_method ? 0 : 1) + sizeof...(Ts);
+
+#ifdef COLD
+#error fixme
+#else
+#define COLD __attribute__((optimize("s"))) __attribute__((cold))
+#endif
+	
+	callback_v(interpreter * i, functor_type f, std::string const & name, policies const & pol = policies(), Conv conv = Conv()) COLD : interpreter_(i), policies_(pol), f_(f), conv_(conv), name_(name) {
 		if (num_opt) {
 			if (pol.options_.empty()) {
 				throw tcl_error(std::string("no getopt string supplied for function \"") + name + "\" taking getopt<> arguments");
 			}
-			generate_hasarg<0, Ts...>::invoke(has_arg_, opts_, pol.options_.c_str());
+			generate_hasarg<0, Ts...>::invoke(has_arg_, opts_, defaults_, pol.options_.c_str(), may_have_defaults);
 		}
-		//std::cerr << "genargtype\n";
 		generate_argtypes<0, Ts...>::invoke(i, argument_types_all_);
 	}
+	void install() __attribute__((optimize("s")));
+	void uninstall() __attribute__((optimize("s")));
+	void invoke(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv [], bool object_dot_method) {
+		checked_invoke_impl(pv, interp, argc, argv, object_dot_method);
+	}
+	void invoke_impl(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv [], bool object_dot_method) COLD;
+
+	~callback_v() COLD { }
+private :
 	template <bool v> struct void_return { };
 
 	template <int ArgI>
 	std::pair<Tcl_ObjType **, Tcl_ObjType **> args() {
 		return generate_argtypes<0, Ts...>::template get<ArgI>(argument_types_all_);
 	}
-	
-	// regular function (return / void)
-	template <typename CC, std::size_t ...Is, typename std::enable_if<std::is_same<CC, no_class>::value, bool>::type = true>
-	void do_invoke(std::index_sequence<Is...> const &, CC * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], int getoptc, Tcl_Obj * const getoptv[], policies const & pol, void_return<false>) {
-		if (argc && argv) { }
-		details::set_result(interp, f_(do_cast<arg_offset, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol)...));
-	}
-	template <typename CC, std::size_t ...Is, typename std::enable_if<std::is_same<CC, no_class>::value, bool>::type = true>
-	void do_invoke(std::index_sequence<Is...> const &, CC * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], int getoptc, Tcl_Obj ** getoptv, policies const & pol, void_return<true>) {
-		if (argc && argv && interp) { }
-		f_(do_cast<arg_offset, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol)...);
-	}
 
+	template <typename CC, std::size_t ...Is>
+	void do_invoke(std::index_sequence<Is...> const &, CC * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], int getoptc, Tcl_Obj * const getoptv[], policies const & pol, void_return<false>) __attribute__((optimize(cold ? "s" : "3")));
+	template <typename CC, std::size_t ...Is>
+	void do_invoke(std::index_sequence<Is...> const &, CC * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], int getoptc, Tcl_Obj ** getoptv, policies const & pol, void_return<true>) __attribute__((optimize(cold ? "s" : "3")));
 
-	// method implemented by a lambda (return / void)
-	template <typename CC, std::size_t ...Is, typename std::enable_if<!std::is_same<CC, Cparm>::value, bool>::type = true>
-	void do_invoke(std::index_sequence<Is...> const &, CC * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], int getoptc, Tcl_Obj ** getoptv, policies const & pol, void_return<false>) {
-		if (argc && argv) { }
-		details::set_result(interp, f_(p, do_cast<arg_offset, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol)...));
-	}
-	template <typename CC, std::size_t ...Is, typename std::enable_if<!std::is_same<CC, Cparm>::value, bool>::type = true>
-	void do_invoke(std::index_sequence<Is...> const &, CC * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], int getoptc, Tcl_Obj ** getoptv, policies const & pol, void_return<true>) {
-		if (argc && argv && interp) { }
-		f_(p, do_cast<arg_offset, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol)...);
-	}
+	int checked_invoke_impl(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv [], bool object_dot_method) __attribute__((optimize(cold ? "s" : "3")));
 
+	static int callback_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) __attribute__((optimize(cold ? "s" : "3")));
 
-	// method (return / void)
-	template <typename CC, std::size_t ...Is, typename std::enable_if<std::is_same<CC, Cparm>::value && !std::is_same<CC, no_class>::value, bool>::type = true>
-	void do_invoke(std::index_sequence<Is...> const &, CC * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], int getoptc, Tcl_Obj ** getoptv, policies const & pol, void_return<false>) {
-		if (argc && argv) { }
-		details::set_result(interp, (p->*f_)(do_cast<arg_offset, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol)...));
-	}
-	template <typename CC, std::size_t ...Is, typename std::enable_if<std::is_same<CC, Cparm>::value && !std::is_same<CC, no_class>::value, bool>::type = true>
-	void do_invoke(std::index_sequence<Is...> const &, CC * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], int getoptc, Tcl_Obj ** getoptv, policies const & pol, void_return<true>) {
-		if (argc && argv && interp) { }
-		(p->*f_)(do_cast<arg_offset, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol)...);
-	}
-
-	void invoke(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv [], bool object_dot_method);
 };
+
+template <typename Cparm, typename Conv, typename Fn, typename R, typename ...Ts>
+template <typename CC, std::size_t ...Is>
+void callback_v<Cparm, Conv, Fn, R, Ts...>::do_invoke(std::index_sequence<Is...> const &, CC * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], int getoptc, Tcl_Obj * const getoptv[], policies const & pol, void_return<false>) {
+	if (argc && argv) { }
+	if constexpr (pol_t::class_lambda) {
+		details::set_result(interp, f_(p, do_cast<arg_offset, 1, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol, conv_, p)...));
+	} else if constexpr (std::is_same<C, no_class>::value || pol_t::free_method) {
+		details::set_result(interp, f_(do_cast<arg_offset, 0, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol, conv_, p)...));
+	} else {
+		details::set_result(interp, (p->*f_)(do_cast<arg_offset, 0, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol, conv_, p)...));
+	}
+}
+
+template <typename Cparm, typename Conv, typename Fn, typename R, typename ...Ts>
+template <typename CC, std::size_t ...Is>
+void callback_v<Cparm, Conv, Fn, R, Ts...>::do_invoke(std::index_sequence<Is...> const &, CC * p, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], int getoptc, Tcl_Obj ** getoptv, policies const & pol, void_return<true>) {
+	if (argc && argv && interp) { }
+	if constexpr (pol_t::class_lambda) {
+		f_(p, do_cast<arg_offset, 1, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol, conv_, p)...);
+	} else if constexpr (std::is_same<C, no_class>::value || pol_t::free_method) {
+		f_(do_cast<arg_offset, 0, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol, conv_, p)...);
+		} else {
+		(p->*f_)(do_cast<arg_offset, 0, typename remove_rc<Ts>::type, sizeof...(Is), Is>(interpreter_, args<Is>(), ppack<Ts...>(), pol.variadic_, interp, argc, argv, getoptc, getoptv, pol, conv_, p)...);
+	}
+}
+
+
+template <typename Cparm, typename Conv, typename Fn, typename Fn2, bool postproc, bool no_base = false, typename Attr = attributes<>, typename E = void>
+struct callback_expand_f {
+};
+
+template <typename Cparm, typename Conv, typename Fn, typename R, typename ...Ts, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f<Cparm, Conv, Fn, R (*)(Ts...), postproc, no_base, Attr, typename std::enable_if<!std::is_class<Fn>::value>::type> {
+	typedef callback_v<callback_free_method<callback_postproc<callback_no_baseclass<callback_attributes<Cparm, Attr>, no_base>, postproc> >, Conv, Fn, R, Ts...> type;
+};
+
+template <typename Cparm, typename Conv, typename Fn, typename R, typename ...Ts, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f<Cparm, Conv, Fn, R (Cparm::*)(Ts...), postproc, no_base, Attr, typename std::enable_if<!std::is_class<Fn>::value>::type> {
+	typedef callback_v<callback_postproc<callback_no_baseclass<callback_attributes<Cparm, Attr>, no_base>, postproc>, Conv, Fn, R, Ts...> type;
+};
+
+template <typename Cparm, typename Conv, typename Fn, typename R, typename ...Ts, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f<Cparm, Conv, Fn, std::function<R (Ts...)>, postproc, no_base, Attr> {
+	typedef callback_v<callback_postproc<callback_no_baseclass<callback_attributes<Cparm, Attr>, no_base>, postproc>, Conv, Fn, R, Ts...> type;
+};
+
+template <typename Cparm, typename T>
+struct senti { };
+
+template <typename Cparm, typename Conv, typename Fn, typename Fn2, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f2 {
+	typedef typename senti<Cparm, Fn2>::type type;
+};
+
+template <typename Cparm, typename Conv, typename Fn, typename LC, typename R, typename ...Ts, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f2<Cparm, Conv, Fn, R (LC::*)(Cparm *, Ts...), postproc, no_base, Attr> {
+	typedef callback_v<class_lambda<callback_postproc<callback_no_baseclass<callback_attributes<Cparm, Attr>, no_base>, postproc> >, Conv, Fn, R, Ts...> type;
+};
+template <typename Cparm, typename Conv, typename Fn, typename LC, typename R, typename ...Ts, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f2<Cparm, Conv, Fn, R (LC::*)(Cparm *, Ts...) const, postproc, no_base, Attr> {
+	typedef callback_v<class_lambda<callback_postproc<callback_no_baseclass<callback_attributes<Cparm, Attr>, no_base>, postproc> >, Conv, Fn, R, Ts...> type;
+};
+template <typename Cparm, typename Conv, typename Fn, typename LC, typename R, typename ...Ts, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f2<Cparm, Conv, Fn, R (LC::*)(Ts...), postproc, no_base, Attr> {
+	typedef callback_v<callback_free_method<callback_postproc<callback_no_baseclass<callback_attributes<Cparm, Attr>, no_base>, postproc> >, Conv, Fn, R, Ts...> type;
+};
+template <typename Cparm, typename Conv, typename Fn, typename LC, typename R, typename ...Ts, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f2<Cparm, Conv, Fn, R (LC::*)(Ts...) const, postproc, no_base, Attr> {
+	typedef callback_v<callback_free_method<callback_postproc<callback_no_baseclass<callback_attributes<Cparm, Attr>, no_base>, postproc> >, Conv, Fn, R, Ts...> type;
+};
+template <typename Conv, typename Fn, typename LC, typename R, typename ...Ts, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f2<no_class, Conv, Fn, R (LC::*)(Ts...), postproc, no_base, Attr> {
+	typedef callback_v<callback_postproc<callback_no_baseclass<callback_attributes<no_class, Attr>, no_base>, postproc>, Conv, Fn, R, Ts...> type;
+};
+template <typename Conv, typename Fn, typename LC, typename R, typename ...Ts, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f2<no_class, Conv, Fn, R (LC::*)(Ts...) const, postproc, no_base, Attr> {
+	typedef callback_v<callback_postproc<callback_no_baseclass<callback_attributes<no_class, Attr>, no_base>, postproc>, Conv, Fn, R, Ts...> type;
+};
+
+template <typename F>
+struct is_std_function {
+	static const bool value = false;
+};
+template <typename R, typename ...Ts>
+struct is_std_function<std::function<R(Ts...)> > {
+	static const bool value = true;
+};
+
+template <typename Cparm, typename Conv, typename Fn, bool postproc, bool no_base, typename Attr>
+struct callback_expand_f<Cparm, Conv, Fn, Fn, postproc, no_base, Attr, typename std::enable_if<std::is_class<Fn>::value && !is_std_function<Fn>::value>::type> {
+	typedef typename callback_expand_f2<Cparm, Conv, Fn, decltype(&Fn::operator()), postproc, no_base, Attr>::type type;
+};
+
+template <typename Fn>
+struct num_arguments {
+	static const int value = -1;
+};
+
+template <typename R, typename ...Ts>
+struct num_arguments<R (*)(Ts...)> {
+	static const int value = sizeof...(Ts);
+};
+
+template <int Ix, typename Fn, typename Tup>
+static void overload_enumerate(Fn fn, Tup const & tup) {
+	fn(&std::get<Ix>(tup));
+	if constexpr (Ix < std::tuple_size<Tup>::value - 1) {
+		overload_enumerate<Ix + 1>(fn, tup);
+	}
+}
+
+template <typename Cparm, typename Conv, typename ...Over>
+struct overloaded_callback : public callback_base_type<Cparm>::type {
+	typedef overloaded_callback this_t;
+	typedef callback_policy_unpack<Cparm> pol_t;
+	typedef typename pol_t::type Cparm_out;
+
+	static const bool cold = pol_t::attr::cold;
+	
+	interpreter * interpreter_;
+	std::string name_;
+
+	std::tuple<typename callback_expand_f<Cparm_out, Conv, Over, Over, true, true, attributes<>>::type...> callbacks_;
+
+	overloaded_callback(interpreter * i, overloaded<Over...> f, std::string const & name, policies const & pol, Conv conv)
+		: overloaded_callback(std::make_index_sequence<sizeof...(Over)>(), i, f, name, pol, conv) {
+	}
+	
+	template <std::size_t ...Is>
+	overloaded_callback(std::index_sequence<Is...> const &, interpreter * i, overloaded<Over...> f, std::string const & name, policies const & pol, Conv conv)
+		: interpreter_(i), name_(name), callbacks_(typename callback_expand_f<Cparm_out, Conv, Over, Over, true, true, attributes<>>::type(i, std::get<Is>(f.ts), name, pol, conv)...) { }
+	
+	template <int ti>
+	void do_invoke(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], bool object_dot_method) __attribute__((optimize(cold ? "s" : "3")));
+
+	static int callback_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) __attribute__((optimize(cold ? "s" : "3")));
+	int checked_invoke_impl(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], bool object_dot_method) __attribute__((optimize(cold ? "s" : "3")));
+	void invoke_impl(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], bool object_dot_method) __attribute__((optimize(cold ? "s" : "3")));
+	void invoke(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], bool object_dot_method) {
+		checked_invoke_impl(pv, interp, argc, argv, object_dot_method);
+	}
+	void install() COLD;
+	void uninstall() COLD;
+};
+
+template <typename Cparm, typename Conv, typename ...Over>
+template <int ti>
+void overloaded_callback<Cparm, Conv, Over...>::do_invoke(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], bool object_dot_method) {
+	if (std::tuple_element<ti, decltype(callbacks_)>::type::num_arguments + 1 == argc) {
+		std::get<ti>(callbacks_).invoke_impl(pv, interp, argc, argv, object_dot_method);
+		return;
+	}
+	if constexpr (ti + 1 < std::tuple_size<decltype(callbacks_)>::value) {
+		do_invoke<ti + 1>(pv, interp, argc, argv, object_dot_method);
+	} else {
+		std::cerr << "wrong number of arguments, overload accepts any of:";
+		overload_enumerate<0>([&] (auto * o) {
+								  std::cerr << " " << std::remove_pointer<decltype(o)>::type::num_arguments;
+							  }, callbacks_);
+		std::cerr << " arguments\n";
+		
+	}
+}
 
 template <typename T>
 struct std_function {
@@ -946,6 +1273,87 @@ template <typename Ret, typename C, typename ...Args>
 struct std_function<Ret (C::*)(Args...) const> {
 	typedef std::function<Ret(Args...)> type;
 };
+}
+
+template <typename Fn>
+struct lambda_wrapper { Fn fn; lambda_wrapper(Fn f) : fn(f) { } };
+
+namespace details {
+template <typename T>
+struct is_lambda_wrapper {
+	static const bool value = false;
+};
+template <typename T>
+struct is_lambda_wrapper<lambda_wrapper<T> > {
+	static const bool value = true;
+};
+
+inline policies default_policies;
+
+template <typename E, typename ...Extra>
+inline policies const & extra_args_policies(E const & e, Extra... extra) {
+	if constexpr (std::is_same<typename std::decay<E>::type, policies>::value) {
+		return e;
+	}
+	return default_policies;
+}
+
+inline policies const & extra_args_policies() {
+	return default_policies;
+}
+
+inline auto extra_args_conversions() {
+	return std::tuple<>();
+}
+
+template <typename ...Extra>
+struct has_policies {
+	static const bool value = false;
+};
+
+template <typename E, typename ...Extra>
+struct has_policies<E, Extra...> {
+	static const bool value = std::is_same<E, policies>::value ? true : has_policies<Extra...>::value;
+};
+
+template <typename E, typename ...Extra>
+inline auto extra_args_conversions(E e, Extra... extra) {
+	if constexpr (std::is_same<typename std::decay<E>::type, policies>::value) {
+		return extra_args_conversions(extra...);
+	} else if constexpr (is_lambda_wrapper<E>::value) {
+		return extra_args_conversions(extra...);
+	} else if constexpr (is_attribute<E>::value) {
+		return extra_args_conversions(extra...);
+	} else {
+		return std::tuple(e, extra...);
+	}
+}
+
+template <typename Fn>
+inline auto apply_extra_args_wrappers(Fn fn) {
+	return fn;
+}
+
+template <typename Fn, typename E, typename ...Extra>
+inline auto apply_extra_args_wrappers(Fn fn, E e, Extra... extra) {
+	if constexpr (std::is_same<typename std::decay<E>::type, policies>::value) {
+		return apply_extra_args_wrappers(fn, extra...);
+	} else if constexpr (is_lambda_wrapper<E>::value) {
+		return e.fn(fn);
+	} else {
+		return fn;
+	}
+}
+template <typename ...Extra>
+struct attributes_merge {
+	typedef attributes<> type;
+};
+
+template <typename E, typename ...Extra>
+struct attributes_merge<E, Extra...> {
+	typedef typename std::conditional<is_attribute<E>::value, E, typename attributes_merge<Extra...>::type>::type type;
+};
+
 } // namespace details
 
 extern details::no_init_type no_init;
@@ -1166,97 +1574,141 @@ public:
 	}
 
 	int trace_count_ = 0;
+
+	template <typename C, typename Conv, typename Fn, bool postproc = true, typename Attr = details::attributes<>, typename R=void, typename ...Ts>
+	using callback_t = typename details::callback_expand_f<C, Conv, Fn, Fn, postproc, false, Attr>::type;
 	
-	template <class C> class class_definer {
+	template <int i>
+	static inline std::integral_constant<int, i> arg;
+
+	struct {
+	} res;
+
+	static constexpr details::attributes<true> cold = { };
+	
+	template <typename ...Extra>
+	static auto eac(Extra... e) {
+		return details::extra_args_conversions(e...);
+	}
+	template <typename ...Extra>
+	static auto eap(Extra... e) {
+		return details::extra_args_policies(e...);
+	}
+	template <typename Fn, typename ...Extra>
+	static auto eaw(Fn fn, Extra ... e) {
+		return details::apply_extra_args_wrappers(fn, e...);
+	}
+	
+	template <class C, typename ...WExtra>
+	class class_definer {
+		std::tuple<WExtra...> with_extra;
 	public:
-		class_definer(std::shared_ptr<details::class_handler<C>> ch, interpreter * inter, bool managed) : ch_(ch), interp_(inter), managed_(managed) {}
+		class_definer(details::class_handler<C> * ch, interpreter * inter, bool managed, WExtra... extra) : ch_(ch), interp_(inter), managed_(managed), with_extra(extra...) {}
 		
-		template <typename Fn>
-		class_definer & def(std::string const & name, Fn fn, policies const & p = policies()) {
-			return def2<Fn>(name, fn, p);
+		template <typename Fn, typename ...Extra>
+		class_definer & def(std::string const & name, Fn fn, Extra... extra) {
+			//return def2<Fn>(name, fn, std::make_index_sequence<sizeof...(WExtra)>(), extra...);
+			return def2<Fn>(name, fn, std::make_index_sequence<sizeof...(WExtra)>(), extra...);
 		}
 
-		template <typename Fn, typename R, typename ...Ts>
-		class_definer & def2(std::string const & name, R (C::*f)(Ts...), policies const & p = policies()) {
-			ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::callback_v<C, Fn, R, Ts...>(interp_, f, name, p)), interp_->get_interp(), managed_);
-			return *this;
-		}
-		template <typename Fn, typename R, typename ...Ts>
-		class_definer & def2(std::string const & name, R (C::*f)(Ts...) const, policies const & p = policies()) {
-			ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::callback_v<C, Fn, R, Ts...>(interp_, f, name, p)), interp_->get_interp(), managed_);
-			return *this;
-		}
-		template <typename R, typename ...Ts>
-		class_definer & def2(std::string const & name, std::function<R(C *, Ts...)> fn, policies const & p = policies()) {
-			ch_->register_method(name, std::shared_ptr<details::object_cmd_base>(new details::callback_v<details::class_lambda<C>, std::function<R(C *, Ts...)>, R, Ts...>(interp_, fn, name, p)), interp_->get_interp(), managed_);
-			return *this;
-		}
+		template <typename Fn, std::size_t ...Is, typename ...Extra>
+		class_definer & def2(std::string const & name, Fn f, std::index_sequence<Is...>, Extra... extra) COLD;
 		
-		template <typename Fn>
-		class_definer & def2(std::string const & name, Fn fn, policies const & p = policies()) {
-			return def2(name, typename details::std_function<decltype(&Fn::operator())>::type(fn), p);
-		}
+		template <typename Fn, std::size_t ...Is, typename ...Over, typename ...Extra>
+		class_definer & def2(std::string const & name, overloaded<Over...> const & over, std::index_sequence<Is...> seq, Extra... extra) COLD;
 
-		template <typename T>
-		class_definer & defvar(std::string const & name, T C::*varp);
+		template <typename CC, typename T>
+		class_definer & defvar(std::string const & name, T CC::*varp) COLD;
 	private:
 		interpreter * interp_;
-		std::shared_ptr<details::class_handler<C>> ch_;
+		details::class_handler<C> * ch_;
 		bool managed_;
 	};
 
-	template <typename C>
+	template <typename C, typename ...WExtra>
 	struct function_definer {
-		function_definer(C * this_p, interpreter * interp) : this_p_(this_p), interp_(interp) { }
+		std::tuple<WExtra...> with_extra;
+		
+		function_definer(C * this_p, interpreter * interp, WExtra... extra) : this_p_(this_p), interp_(interp), with_extra(extra...) { }
 
-		template <typename Fn>
-		function_definer & def(std::string const & name, Fn fn, policies const & p = policies()) {
-			interp_->def(name, fn, this_p_, p);
-			return *this;
+		template <typename Fn, typename ...Extra>
+		function_definer & def(std::string const & name, Fn fn, Extra... extra) {
+			return def2(name, fn, std::make_index_sequence<sizeof...(WExtra)>(), extra...);
 		}
 
+		template <typename Fn, typename ...Extra, std::size_t ...Is>
+		function_definer & def2(std::string const & name, Fn fn, std::index_sequence<Is...>, Extra... extra) COLD;
+		
 		template <typename T>
-		function_definer & defvar(std::string const & name, T C::*t);
+		function_definer & defvar(std::string const & name, T C::*t) COLD;
 		
 		C * this_p_;
 		interpreter * interp_;
 	};
+
+	const Tcl_ObjType   * list_type_               = nullptr;
+	const Tcl_ObjType   * cmdname_type_            = nullptr;
+	const Tcl_Namespace * object_namespace_        = nullptr;
+	//const Tcl_Namespace * object_commandnamespace_ = nullptr;
+
+	bool is_list(Tcl_Obj * o) { return o->typePtr == list_type_; }
 	
+	static constexpr const char * object_namespace_name = "o";
+	static constexpr const char * object_namespace_prefix = "o::";
+	static const int object_namespace_prefix_len = 3;
+
+#if 0
+	static constexpr const char * object_command_namespace_name = "O";
+	static constexpr const char * object_command_namespace_prefix = "O::";
+	static const int object_command_namespace_prefix_len = 3;
+#endif
+	
+	void find_standard_types();
 	interpreter(Tcl_Interp *, bool owner = false);
 	~interpreter();
 
 	void make_safe();
 
-	Tcl_Interp *get() const { return interp_; }
+	void custom_construct(const char * classname, const char * objname, void * p);
+
+	Tcl_Interp * get() const  { return interp_; }
 	Tcl_Interp * get_interp() { return interp_; }
-	
+
 	// free function definitions
 
-	template <typename R, typename ...Ts>
-	void def(std::string const & name, R(*f)(Ts...), policies const & p = policies()) {
-		add_function(name, new details::callback_v<details::no_class, R(*)(Ts...), R, Ts...>(this, f, name, p));
+	template <typename Fn, typename ...Extra>
+	void def(std::string const & name, Fn fn, Extra... extra) {
+		auto pol = eap(extra...);
+
+		def2<details::has_policies<Extra...>::value>(name, fn, extra...);
 	}
-	template <typename R, typename ...Ts>
-	void def(std::string const & name, std::function<R(Ts...)> fn, policies const & p = policies()) {
-		add_function(name, new details::callback_v<details::no_class, std::function<R(Ts...)>, R, Ts...>(this, fn, name, p));
+	template <bool Postproc, typename Fn, typename ...Extra>
+	void def2(std::string const & name, Fn fn, Extra... extra) {
+		typedef decltype(details::extra_args_conversions(extra...)) conv_t;
+		add_function(name, new callback_t<details::no_class, conv_t, Fn, Postproc>(this, fn, name, eap(extra...), eac(extra...)));
 	}
 
-	template <typename Fn>
-	void def(std::string const & name, Fn fn, policies const & p = policies()) {
-		def(name, typename details::std_function<decltype(&Fn::operator())>::type(fn), p);
+	template <typename C, typename R, typename ...Ts, typename ...Extra>
+	void def(std::string const & name, R (C::*f)(Ts...), C * this_p, Extra... extra) {
+		def(name, [this_p, f](Ts... args) { return (this_p->*f)(args...); }, extra...);
 	}
-
-	template <typename C, typename R, typename ...Ts>
-	void def(std::string const & name, R (C::*f)(Ts...), C * this_p, policies const & p = policies()) {
-		def(name, [this_p, f](Ts... args) { return (this_p->*f)(args...); }, p);
+	
+	template <typename ...Over, typename ...Extra>
+	void def(std::string const & name, overloaded<Over...> over, Extra... extra) {
+		typedef decltype(details::extra_args_conversions(extra...)) conv_t;
+		add_function(name, new details::overloaded_callback<details::no_class, conv_t, Over...>(this, over, name, eap(extra...), eac(extra...)));
 	}
-
+	
 	template <typename T>
 	void defvar(std::string const & name, T & v);
 
-	template <typename C>
-	function_definer<C> def(C * this_p) {
-		return function_definer<C>(this_p, this);
+	template <typename C, typename ...Extra>
+	function_definer<C, Extra...> with(C * this_p, Extra... extra) {
+		return function_definer<C, Extra...>(this_p, this, extra...);
+	}
+	template <typename ...Extra>
+	function_definer<details::no_class, Extra...> with(Extra... extra) {
+		return function_definer<details::no_class, Extra...>(nullptr, this, extra...);
 	}
 
 	template <typename C, typename ...Ts> struct call_constructor {
@@ -1265,20 +1717,12 @@ public:
 		}
 	};
 
-	template <class C, typename ...Ts> class_definer<C> class_(std::string const &name, init<Ts...> const & = init<Ts...>(), policies const &p = policies()) {
-		typedef details::callback_v<details::no_class, C * (*)(Ts...), C *, Ts...> callback_type;
-		
-		std::shared_ptr<details::class_handler<C>> ch(new details::class_handler<C>());
+	template <class C, typename ...Ts, typename ...Extra>
+	class_definer<C, Extra...> class_(std::string const &name, init<Ts...> const & init_arg = init<Ts...>(details::init_default_tag()), Extra... extra) COLD;
 
-		add_class(name, ch);
+	template <class C, typename ...Extra>
+	class_definer<C, Extra...> class_(std::string const &name, details::no_init_type const &, Extra... extra) COLD;
 
-		add_constructor(name, ch, new callback_type(this, &call_constructor<C, Ts...>::doit, name, p), p);
-
-		return class_definer<C>(ch, this, false);
-	}
-
-#define CPPTCL_MANAGED_CLASS
-#ifdef CPPTCL_MANAGED_CLASS
 	template <typename C, typename ...Ts> struct call_managed_constructor {
 		interpreter * interp_;
 		call_managed_constructor(interpreter * i) : interp_(i) { }
@@ -1286,20 +1730,34 @@ public:
 		object operator()(Ts... ts);
 	};
 
-	template <class C, typename ...Ts> class_definer<C> managed_class_(std::string const &name, init<Ts...> const & = init<Ts...>(), policies const &p = policies()) {
-		typedef details::callback_v<details::no_class, call_managed_constructor<C, Ts...>, object, Ts...> callback_type;
-		
-		std::shared_ptr<details::class_handler<C>> ch(new details::class_handler<C>());
+	template <class C, typename ...Ts, typename ...Extra>
+	class_definer<C> managed_class_(std::string const &name, init<Ts...> const & = init<Ts...>(), Extra... extra) {
+		typedef details::callback_v<details::no_class, std::tuple<>, call_managed_constructor<C, Ts...>, object, Ts...> callback_type;
 
-		this->type<type_ops<C> >(name, (C *) 0);
-		
+		if (get_class_handler(name)) {
+			throw tcl_error("overloaded constructors not implemented");
+		}
+
+		details::class_handler<C> * ch = new details::class_handler<C>();
+
+		this->type<type_ops<C, true> >(name, (C *) 0);
+
 		add_class(name, ch);
 
-		add_managed_constructor(name, ch, new callback_type(this, call_managed_constructor<C, Ts...>(this), name, p), p);
+		add_managed_constructor(name, ch, new callback_type(this, call_managed_constructor<C, Ts...>(this), name));
 
-		return class_definer<C>(ch, this, true);
+		return class_definer<C, Extra...>(ch, this, true, extra...);
 	}
-#endif
+
+	template <class C, typename ...Extra>
+	class_definer<C, Extra...> managed_class_(std::string const &name, details::no_init_type const &, Extra... extra) {
+		details::class_handler<C> * ch = static_cast<details::class_handler<C> *>(get_class_handler(name));
+		if (!ch) {
+			ch = new details::class_handler<C>();
+			add_class(name, ch);
+		}
+		return class_definer<C, Extra...>(ch, this, true, extra...);
+	}
 
 	std::map<std::string, Tcl_ObjType *> obj_type_by_tclname_;
 	std::map<std::type_index, Tcl_ObjType *> obj_type_by_cppname_;
@@ -1312,7 +1770,7 @@ public:
 		}
 		virtual deleter * dup_deleter() { return this; }
 		virtual void * dup(void * obj) {
-			return (void *) new T(*((T *) obj));
+			return obj;
 		}
 		virtual ~deleter() { }
 	};
@@ -1320,7 +1778,6 @@ public:
 	template <typename T>
 	struct dyn_deleter : public deleter<T> {
 		bool free(Tcl_Obj * o) override {
-			//std::cerr << "REF#: " << o->refCount << "\n";
 			delete (T *) o->internalRep.twoPtrValue.ptr1;
 			return true;
 		}
@@ -1335,31 +1792,24 @@ public:
 
 		template <typename DEL>
 		shared_ptr_deleter(T * p, DEL del) : p_(p, del) {
-			//std::cerr << "custom\n";
 		}
 		shared_ptr_deleter(std::shared_ptr<T> & p) : p_(p) {
-			//std::cerr << "copy\n";
 		}
 		bool free(Tcl_Obj * o) override {
 			return true;
 		}
 		virtual void * dup(void * obj) override { return obj; }
 		deleter<T> * dup_deleter() override {
-			//std::cerr << "dup\n";
 			return new shared_ptr_deleter(p_);
 		}
 		~shared_ptr_deleter() {
-			//std::cerr << "~shptr deleter\n";
 		}
 	};
 	
-	template <typename T>
+	template <typename T, bool Managed = false>
 	struct type_ops {
 		static void dup(Tcl_Obj * src, Tcl_Obj * dst) {
-			//2p dst->internalRep.otherValuePtr = src->internalRep.otherValuePtr;
-			//std::cerr << "dup " << src->typePtr << " " << (src->typePtr ? src->typePtr->name : "()" ) << "\n";
 			if (src->internalRep.twoPtrValue.ptr2) {
-				//std::cerr << "dup osrc=" << src << "[" << src->refCount << "] odst=" << dst << "[" << dst->refCount << "]\n";// type=" << src->typePtr << " intern=" << src->internalRep.otherValuePtr << "\n";
 				deleter<T> * d = (deleter<T> *) src->internalRep.twoPtrValue.ptr2;
 				dst->internalRep.twoPtrValue.ptr1 = d->dup(src->internalRep.twoPtrValue.ptr1);
 				dst->internalRep.twoPtrValue.ptr2 = (( deleter<T> *)src->internalRep.twoPtrValue.ptr2)->dup_deleter();
@@ -1367,12 +1817,10 @@ public:
 				dst->internalRep.twoPtrValue.ptr1 = src->internalRep.twoPtrValue.ptr1;
 				dst->internalRep.twoPtrValue.ptr2 = nullptr;
 			}
-			//src->internalRep.twoPtrValue.ptr2 = nullptr;
 			dst->typePtr = src->typePtr;
 		}
 		static void free(Tcl_Obj * o) {
 			if (o->internalRep.twoPtrValue.ptr2) {
-				//std::cerr << "free " << o << "\n";
 				deleter<T> * d = (deleter<T> *) o->internalRep.twoPtrValue.ptr2;
 				if (d->free(o)) {
 					delete d;
@@ -1381,7 +1829,7 @@ public:
 		}
 		static void str(Tcl_Obj * o) {
 			std::ostringstream oss;
-			oss << 'p' << o->internalRep.twoPtrValue.ptr1;
+			oss << (Managed ? object_namespace_name : object_namespace_name) << "::" << o->internalRep.twoPtrValue.ptr1;
 			str_impl(o, oss.str());
 		}
 		static void str_impl(Tcl_Obj * o, std::string const & name) {
@@ -1391,14 +1839,12 @@ public:
 			o->length = name.size();
 		}
 		static int set(Tcl_Interp *, Tcl_Obj *) {
-			//std::cerr << "type set\n";
 			return TCL_OK;
 		}
 	};
 
 	template <typename TY>
 	Tcl_ObjType * get_objtype() {
-		//std::cerr << "get_objtype\n";
 		auto it = obj_type_by_cppname_.find(std::type_index(typeid(TY)));
 		if (it != obj_type_by_cppname_.end()) {
 			return it->second;
@@ -1406,28 +1852,17 @@ public:
 		return nullptr;
 	}
 	Tcl_ObjType * get_objtype(const char * name) {
-		//std::cerr << "get_objtype\n";
 		auto & o = obj_type_by_tclname_;
 		auto it = o.find(name);
 		return it == o.end() ? nullptr : it->second;
 	}
 	template <typename T>
 	bool is_type(Tcl_Obj * o) {
-		//std::cerr << "is_type\n";
 		return o->typePtr && get_objtype<T>() == o->typePtr;
-		if (o->typePtr) {
-			std::type_index * tip = (std::type_index *) (o->typePtr->name + 256);
-			if (std::type_index(typeid(T)) == *tip) {
-				return true;
-			}
-		}
-		return false;
 	}
 	template <typename T>
 	T * try_type(Tcl_Obj * o) {
-		//std::cerr << "try_type\n";
 		if (is_type<T>(o)) {
-			//2p return (T *) o->internalRep.otherValuePtr;
 			return (T *) o->internalRep.twoPtrValue.ptr1;
 		}
 		return nullptr;
@@ -1445,7 +1880,7 @@ public:
 			std::cerr << "attempt to register type " << name << " twice\n";
 		}
 		Tcl_ObjType * ot = new Tcl_ObjType;
-		//char * cp = new char[name.size() + 1 + sizeof(std::type_index)];
+
 		char * cp = new char[256 + sizeof(std::type_index)];
 		strcpy(cp, name.c_str());
 		cp[name.size()] = 0;
@@ -1479,11 +1914,20 @@ public:
 		return this->template tcl_cast<T>(this->get_interp(), o, false, ot);
 	}
 
-	template <typename T, typename std::enable_if<std::is_pointer<T>::value, bool>::type = true>
+	template <typename T, typename std::enable_if<std::is_pointer<T>::value && std::is_same<typename std::remove_const<typename std::remove_pointer<T>::type>::type, char>::value, bool>::type = true>
+	T tcl_cast(Tcl_Interp * i, Tcl_Obj * o, bool byref) {
+		return Tcl_GetStringFromObj(o, nullptr);
+	}
+
+	template <typename T, typename std::enable_if<std::is_same<T, Tcl_Obj *>::value>::type = true>
+	T tcl_cast(Tcl_Interp * i, Tcl_Obj * o, bool byref) {
+		return o;
+	}
+	
+	template <typename T, typename std::enable_if<std::is_pointer<T>::value && !std::is_same<typename std::remove_const<typename std::remove_pointer<T>::type>::type, char>::value, bool>::type = true>
 	T tcl_cast(Tcl_Interp * i, Tcl_Obj * o, bool byref) {
 		auto it = obj_type_by_cppname_.find(std::type_index(typeid(typename std::remove_pointer<T>::type)));
 		if (it != obj_type_by_cppname_.end()) {
-			//std::cerr << "castingold...\n";
 			return this->template tcl_cast<T>(i, o, byref, it->second);
 		}
 		throw tcl_error("function argument type is not registered");
@@ -1492,48 +1936,32 @@ public:
 	template <typename T, typename std::enable_if<std::is_pointer<T>::value, bool>::type = true>
 	T tcl_cast(Tcl_Interp * i, Tcl_Obj * o, bool byref, Tcl_ObjType * ot) {
 		if (std::is_pointer<T>::value && o->typePtr) {
-			//auto it = obj_type_by_cppname_.find(std::type_index(typeid(typename std::remove_pointer<T>::type)));
-			//if (it != obj_type_by_cppname_.end()) {
-			if (true) {
-				// Tcl_ObjType * otp = it->second;
-				Tcl_ObjType * otp = ot;
-				//std::cerr << "casting... " << otp << " " << o->typePtr << " " << o->typePtr->name << "\n";
-
-				if (otp == o->typePtr) {
-					//return (typename std::conditional<std::is_pointer<T>::value, T, T*>::type) o->internalRep.otherValuePtr;
-					//std::cerr << "objcast " << o << " " << o->internalRep.otherValuePtr << "\n";
-					//return (T) o->internalRep.otherValuePtr;
-					return (T) o->internalRep.twoPtrValue.ptr1;//otherValuePtr;
-				} else if (o->typePtr && strcmp(o->typePtr->name, "list") == 0) {
-					int len;
-					if (Tcl_ListObjLength(i, o, &len) == TCL_OK) {
-						if (len == 1) {
-							Tcl_Obj *o2;
-							if (Tcl_ListObjIndex(i, o, 0, &o2) == TCL_OK) {
-								if (otp == o2->typePtr) {
-									//std::cerr << "objcast(list=len1) " << o2 << " " << o2->internalRep.otherValuePtr << "\n";
-									//2p return (T) o2->internalRep.otherValuePtr;
-									return (T) o2->internalRep.twoPtrValue.ptr1;
-								}
+			Tcl_ObjType * otp = ot;
+			if (otp == o->typePtr) {
+				return (T) o->internalRep.twoPtrValue.ptr1;//otherValuePtr;
+			} else if (is_list(o)) {
+				int len;
+				if (Tcl_ListObjLength(i, o, &len) == TCL_OK) {
+					if (len == 1) {
+						Tcl_Obj *o2;
+						if (Tcl_ListObjIndex(i, o, 0, &o2) == TCL_OK) {
+							if (otp == o2->typePtr) {
+								return (T) o2->internalRep.twoPtrValue.ptr1;
 							}
-						} else {
-							throw tcl_error("Expected single object, got list");
 						}
 					} else {
-						throw tcl_error("Unknown tcl error");
+						throw tcl_error("Expected single object, got list");
 					}
 				} else {
-					throw tcl_error("function argument has wrong type");
+					throw tcl_error("Unknown tcl error");
 				}
 			} else {
-				throw tcl_error("function argument type is not registered");
+				throw tcl_error("function argument has wrong type");
 			}
 		} else {
 			throw tcl_error("function argument is not a tcl object type");
 		}
 		return nullptr;
-		return details::tcl_cast<T>::from(i, o, byref);
-		//return nullptr;
 	}
 	template <typename T, typename std::enable_if<!std::is_pointer<T>::value && std::is_same<T, typename details::list_unpack<T>::type>::value && !details::is_any<T>::value, bool>::type = true>
 	T tcl_cast(Tcl_Interp * i, Tcl_Obj * o, bool byref) {
@@ -1544,23 +1972,6 @@ public:
 		return details::tcl_cast<T>::from(i, o, byref);
 	}
 
-	template <class C> class_definer<C> class_(std::string const &name, details::no_init_type const &) {
-		std::shared_ptr<details::class_handler<C>> ch(new details::class_handler<C>());
-
-		add_class(name, ch);
-
-		return class_definer<C>(ch, this, false);
-	}
-
-	template <class C> class_definer<C> managed_class_(std::string const &name, details::no_init_type const &) {
-		std::shared_ptr<details::class_handler<C>> ch(new details::class_handler<C>());
-		
-		add_class(name, ch);
-		
-		return class_definer<C>(ch, this, true);
-	}
-
-	
 	// free script evaluation
 	details::result eval(std::string const &script);
 	details::result eval(std::istream &s);
@@ -1570,6 +1981,8 @@ public:
 	void result_reset() {
 		Tcl_ResetResult(get_interp());
 	}
+
+	static std::string objinfo(object const & o);
 	
 	// the InputIterator should give object& or Tcl_Obj* when dereferenced
 	template <class InputIterator> details::result eval(InputIterator first, InputIterator last);
@@ -1617,10 +2030,11 @@ public:
 
 	void add_function(std::string const &name, details::callback_base * cb);
 
-	void add_class(std::string const &name, std::shared_ptr<details::class_handler_base> chb);
-
-	void add_constructor(std::string const &name, std::shared_ptr<details::class_handler_base> chb, details::callback_base * cb, policies const &p = policies());
-	void add_managed_constructor(std::string const &name, std::shared_ptr<details::class_handler_base> chb, details::callback_base * cb, policies const &p = policies());
+	void add_class(std::string const &name, details::class_handler_base * chb);
+	details::class_handler_base * get_class_handler(std::string const & name);
+	
+	void add_constructor(std::string const &name, details::class_handler_base * chb, details::callback_base * cb);
+	void add_managed_constructor(std::string const &name, details::class_handler_base * chb, details::callback_base * cb);
 
 	Tcl_Interp *interp_;
 	bool owner_;
@@ -1641,61 +2055,42 @@ template <typename T>
 T variadic<T>::at(int ix) const { return interp_->template tcl_cast<T>(objv[ix]); }
 
 template <typename T>
-typename list<T>::return_t list<T>::at(std::size_t ix) const {
+Tcl_Obj * list<T>::obj_at(std::size_t ix) const {
+	Tcl_Obj *o;
+	if (Tcl_ListObjIndex(interp_->get(), lo_, ix, &o) == TCL_OK) {
+		return o;
+	}
+}
+
+template <typename T>
+std::pair<typename list<T>::return_t, Tcl_Obj *> list<T>::with_obj_at(std::size_t ix) const {
+	typedef std::pair<return_t, Tcl_Obj *> ret_t;
 	Tcl_Obj *o;
 	if (Tcl_ListObjIndex(interp_->get(), lo_, ix, &o) == TCL_OK) {
 		if constexpr (isany) {
-			return return_t(interp_, o, ot_);
+			return ret_t(return_t(interp_, o, ot_), o);
 		} else if constexpr (details::is_basic_type<T>::value) {
-			return interp_->template tcl_cast<T>(o);
+			return ret_t(interp_->template tcl_cast<T>(o), o);
 		} else {
 			if (o->typePtr == ot_[0]) {
-				//return (return_t) o->internalRep.otherValuePtr;
-				return (return_t) o->internalRep.twoPtrValue.ptr1;
+				return ret_t((return_t) o->internalRep.twoPtrValue.ptr1, o);
 			} else {
 				throw tcl_error("Unexpected type in list. Got " + details::tcl_typename(o) + " need " + ot_[0]->name);
 			}
 		}
 	}
-	return return_t();
+	return ret_t(return_t(), nullptr);
 }
 
 template <typename ...Ts>
 template <typename TT>
 typename std::conditional<details::is_list<TT>::value, TT, TT *>::type any<Ts...>::as() const {
-	//if (this->interp_->try_type<T>(this->o_->typePtr)) {
-#if 0
-	if (this->which_ == details::type_at<TT, Ts...>::value) {
-		if constexpr (details::is_list<TT>::value) {
-			if (this->o_->typePtr && strcmp(this->o_->typePtr->name, "list") == 0) {
-				return TT(interp_, this->o_, interp_->get_objtype<typename details::list_unpack<TT>::type>());
-			} else {
-				return TT();
-				//throw tcl_error(std::string("bad cast of ") + (this->o_->typePtr ? this->o_->typePtr->name : "(none)") + " to list");
-			}
-		} else {
-			//return (TT *) this->o_->internalRep.otherValuePtr; //o_->internalRep.otherValuePtr;
-			return (TT *) this->o_->internalRep.twoPtrValue.ptr1; //o_->internalRep.otherValuePtr;
-		}
-	}
-	if constexpr (details::is_list<TT>::value) {
-		return TT();
-	} else {
-		return nullptr;
-	}
-#else
 	const int toff = sizeof...(Ts) - 1 - details::type_at<TT, Ts...>::value;
 
 	if constexpr (details::is_list<TT>::value) {
-		if (this->o_ && this->o_->typePtr && strcmp(this->o_->typePtr->name, "list") == 0) {
+		if (this->o_ && interp_->is_list(this->o_)) {
 			Tcl_Obj * oo;
 			if (Tcl_ListObjIndex(interp_->get_interp(), this->o_, 0, &oo) == TCL_OK) {
-#if 0
-				std::cerr << sizeof...(Ts) << " " << details::type_at<TT, Ts...>::value << " " << details::tcl_typename(oo) << "\n";
-				for (int i = 0; i < sizeof...(Ts); ++i) {
-					std::cerr << i << " " << this->ot_[i]->name << "\n";
-				}
-#endif
 				if (oo->typePtr == this->ot_[toff]) {
 					return TT(interp_, this->o_, this->ot_ + toff);
 				}
@@ -1703,20 +2098,36 @@ typename std::conditional<details::is_list<TT>::value, TT, TT *>::type any<Ts...
 			return TT();
 		} else {
 			return TT();
-			//throw tcl_error(std::string("bad cast of ") + (this->o_->typePtr ? this->o_->typePtr->name : "(none)") + " to list");
 		}
 	} else {
-		//std::cerr << this->o_->typePtr << " " << this->o_->typePtr->name << " " << details::type_at<TT, Ts...>::value << " " << this->ot_ << "\n";
 		if (this->o_ && this->ot_[toff] == this->o_->typePtr) {
 			return (TT *) this->o_->internalRep.twoPtrValue.ptr1;
 		} else {
 			return nullptr;
 		}
 	}
-#endif
 }
 
 namespace details {
+template <typename T> struct tcl_cast<T *> {
+	static T *from(Tcl_Interp *, Tcl_Obj *obj, bool byReference) {
+		std::string s(Tcl_GetString(obj) + interpreter::object_namespace_prefix_len);
+		if (s.size() == 0) {
+			throw tcl_error("Expected pointer value, got empty string.");
+		}
+
+		if (s.compare(0, interpreter::object_namespace_prefix_len, interpreter::object_namespace_prefix) != 0) {
+			throw tcl_error("Expected pointer value.");
+		}
+
+		std::istringstream ss(s);
+		void *p;
+		ss >> p;
+
+		return static_cast<T *>(p);
+	}
+};
+
 template <int I, typename TArg, typename ...Ts>
 struct generate_argtypes<I, TArg, Ts...> {
 	template <typename WRAPT>
@@ -1727,19 +2138,14 @@ struct generate_argtypes<I, TArg, Ts...> {
 	template <typename TT>
 	static Tcl_ObjType * lookup_type(interpreter * interp, int pos, wrap<TT> * np) {
 		auto * ot = interp->get_objtype<typename std::remove_pointer<TT>::type>();
-		//std::cerr << "lookup " << pos << " " << "_Z" << typeid(TT).name() << " " << ot << " " << (ot ? ot->name : "()") << "\n";
 		return ot;
-		//return interp->get_objtype<TT>();
 	}
 	template <std::size_t ...Is>
 	static void invoke_helper(std::index_sequence<Is...> const &, interpreter * interp, Tcl_ObjType ** all) {
 		((all[Is] = lookup_type(interp, Is, (wrap<typename subtype<Is, T>::type> *) 0)), ...);
-		//p[0] = all;
-		//p[1] = all + sizeof...(is);
 		generate_argtypes<I + 1, Ts...>::invoke(interp, all + sizeof...(Is));
 	}
 	static void invoke(interpreter * interp, Tcl_ObjType ** all) {
-		//std::cerr << "gat _Z" << typeid(T).name() << " " << num_subtypes<T>::value << "\n";
 		invoke_helper(std::make_index_sequence<num_subtypes<T>::value>(), interp, all);
 	}
 
@@ -1755,11 +2161,11 @@ struct generate_argtypes<I, TArg, Ts...> {
 	static const int length = num_subtypes<T>::value + generate_argtypes<I + 1, Ts...>::length;
 };
 
-
 template <typename T, typename ...Ts>
 inline void any_impl<T, Ts...>::set_which(interpreter * i, Tcl_Obj * o) {
 	if constexpr (is_list<T>::value) {
-		if (o->typePtr && strcmp(o->typePtr->name, "list") == 0) {
+		//if (o->typePtr && strcmp(o->typePtr->name, "list") == 0) {
+		if (i->is_list(o)) {
 			Tcl_Obj *oo;
 			if (Tcl_ListObjIndex(i->get(), o, 0, &oo) == TCL_OK) {
 				if (i->is_type<typename list_unpack<T>::type>(oo)) {
@@ -1793,19 +2199,54 @@ struct back<T, Ts...> {
 	using type = typename std::conditional<sizeof...(Ts) == 0, T, typename back<Ts...>::type>::type;
 };
 
-template <typename Cparm, typename Fn, typename R, typename ...Ts>
-void callback_v<Cparm, Fn, R, Ts...>::invoke(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv [], bool object_dot_method) {
+template <typename Cparm, typename Convs, typename Fn, typename R, typename ...Ts>
+void callback_v<Cparm, Convs, Fn, R, Ts...>::install() {
+	Tcl_CreateObjCommand(interpreter_->get_interp(), name_.c_str(), callback_handler, (ClientData) this, 0);
+}
+template <typename Cparm, typename Convs, typename Fn, typename R, typename ...Ts>
+void callback_v<Cparm, Convs, Fn, R, Ts...>::uninstall() {
+	Tcl_DeleteCommand(interpreter_->get_interp(), name_.c_str());
+}
+
+template <typename Cparm, typename Convs, typename Fn, typename R, typename ...Ts>
+int callback_v<Cparm, Convs, Fn, R, Ts...>::checked_invoke_impl(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv [], bool object_dot_method) {
+	try {
+		this->invoke_impl(pv, interp, argc, argv, object_dot_method);
+	} catch (tcl_usage_message_printed & e) {
+	} catch (std::exception & e) {
+		for (int i = 0; i < argc; ++i) {
+			if (i) { std::cerr << " "; }
+			if (this->interpreter_->is_list(argv[i])) {
+				std::cerr << '{' << Tcl_GetString(argv[i]) << '}';
+			} else {
+				std::cerr << Tcl_GetString(argv[i]);
+			}
+		}
+		std::cerr << ": " << e.what() << "\n";
+		//Tcl_SetObjResult(interp, Tcl_NewStringObj(const_cast<char *>(e.what()), -1));
+		return TCL_ERROR;
+	} catch (...) {
+		std::cerr << "Unknown error.\n";
+		return TCL_ERROR;
+	}
+	return TCL_OK;
+}
+
+template <typename Cparm, typename Convs, typename Fn, typename R, typename ...Ts>
+void callback_v<Cparm, Convs, Fn, R, Ts...>::invoke_impl(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv [], bool object_dot_method) {
 	static const int num_gopt = num_getopt<Ts...>::value;
-	static const int num_opt    = num_optional<Ts...>::value;
+	static const int num_opt  = num_optional<Ts...>::value;
 	Tcl_Obj * getopt_argv[num_gopt + 1] = { nullptr };
+	bool getopt_allocated[num_gopt + 1] = { false };
 	Tcl_Obj boolean_dummy_object;
-	std::size_t ai = std::is_same<C, no_class>::value || object_dot_method ? 1 : 2;
+	std::size_t ai = std::is_same<C, no_class>::value || pol_t::free_method || object_dot_method ? 1 : 2;
 	static const bool has_variadic_ = has_variadic<Ts...>::value;
+	bool any_getopt_allocated = false;
 	
 	if (interpreter_->trace()) {
 		for (int i = 0; i < argc; ++i) {
 			std::cerr << " ";
-			if (argv[i]->typePtr && strcmp(argv[i]->typePtr->name, "list") == 0) {
+			if (interpreter_->is_list(argv[i])) {
 				std::cerr << '{' << Tcl_GetString(argv[i]) << '}';
 			} else {
 				std::cerr << Tcl_GetString(argv[i]);
@@ -1815,7 +2256,7 @@ void callback_v<Cparm, Fn, R, Ts...>::invoke(void * pv, Tcl_Interp * interp, int
 	}
 	++interpreter_->trace_count_;
 	
-	if (argc == ai + 1 && strcmp(Tcl_GetString(argv[ai]), "-help") == 0 && std::find(opts_, opts_ + num_gopt, "help") == opts_ + num_gopt) {
+	if (num_gopt && argc == ai + 1 && strcmp(Tcl_GetString(argv[ai]), "-help") == 0 && std::find(opts_, opts_ + num_gopt, "help") == opts_ + num_gopt) {
 		if (num_gopt) {
 			std::cerr << Tcl_GetString(argv[0]);
 			for (int oi = 0; oi < num_gopt; ++oi) {
@@ -1832,9 +2273,7 @@ void callback_v<Cparm, Fn, R, Ts...>::invoke(void * pv, Tcl_Interp * interp, int
 	
 	if (num_gopt) {
 		for (; ai < argc; ++ai) {
-			//if (argv[ai]->typePtr) break;
 			char * s = Tcl_GetString(argv[ai]);
-			//std::cerr << "look at: " << s << "\n";
 			if (s[0] == '-') {
 				if (s[1] == '-' && s[2] == 0) {
 					++ai;
@@ -1844,7 +2283,6 @@ void callback_v<Cparm, Fn, R, Ts...>::invoke(void * pv, Tcl_Interp * interp, int
 				for (int oi = 0; oi < num_gopt; ++oi) {
 					if (opts_[oi].compare(s + 1) == 0) {
 						found = true;
-						//std::cerr << s << " at " << ai << " mapped to " << oi << " has_arg " << has_arg_[oi] << "\n";
 						if (has_arg_[oi]) {
 							++ai;
 							if (ai >= argc) {
@@ -1863,54 +2301,133 @@ void callback_v<Cparm, Fn, R, Ts...>::invoke(void * pv, Tcl_Interp * interp, int
 				break;
 			}
 		}
+		if (may_have_defaults) {
+			for (int oi = 0; oi < num_gopt; ++oi) {
+				if (! getopt_argv[oi]) {
+					if (!defaults_[oi].empty()) {
+						Tcl_IncrRefCount(getopt_argv[oi] = Tcl_NewStringObj(defaults_[oi].c_str(), defaults_[oi].size()));
+						getopt_allocated[oi] = true;
+						any_getopt_allocated |= true;
+					}
+				}
+			}
+		}
 	}
 	check_params_no(argc - ai, sizeof...(Ts) - (has_variadic_ || policies_.variadic_ ? 1 : 0) - num_gopt - num_opt, has_variadic_ || policies_.variadic_ ? -1 : sizeof...(Ts) - num_gopt, policies_.usage_);
+	
+	auto dealloc = [&](void *) {
+		if (may_have_defaults && any_getopt_allocated) {
+			for (int oi = 0; oi < num_gopt; ++oi) {
+				if (getopt_allocated[oi]) {
+					Tcl_DecrRefCount(getopt_argv[oi]);
+				}
+			}
+		}
+	};
+	std::unique_ptr<void *, decltype(dealloc)> dealloc_raii(0, dealloc);
+	
+	do_invoke(std::make_index_sequence<sizeof... (Ts)>(), (C *) pv, interp, argc - ai, argv + ai, num_gopt, getopt_argv, policies_, void_return<std::is_same<R, void>::value>());
+	if (pol_t::postproc) {
+		post_process_policies(interp, policies_, argv + ai, false);
+	}
+}
+template <typename Cparm, typename Convs, typename Fn, typename R, typename ...Ts>
+int callback_v<Cparm, Convs, Fn, R, Ts...>::callback_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
+	this_t * this_p = (this_t *) cd;
+	
+	return this_p->checked_invoke_impl(nullptr, interp, objc, objv, false);
+}
+
+template <typename Cparm, typename Conv, typename ...Over>
+void overloaded_callback<Cparm, Conv, Over...>::invoke_impl(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], bool object_dot_method) {
+	do_invoke<0>(pv, interp, argc, argv, object_dot_method);
+}
+
+template <typename Cparm, typename Conv, typename ...Over>
+int overloaded_callback<Cparm, Conv, Over...>::checked_invoke_impl(void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv[], bool object_dot_method) {
 	try {
-		do_invoke(std::make_index_sequence<sizeof... (Ts)>(), (C *) pv, interp, argc - ai, argv + ai, num_gopt, getopt_argv, policies_, void_return<std::is_same<R, void>::value>());
+		invoke_impl(pv, interp, argc, argv, object_dot_method);
 	} catch (tcl_usage_message_printed & e) {
 	} catch (std::exception & e) {
 		for (int i = 0; i < argc; ++i) {
 			if (i) { std::cerr << " "; }
-			if (argv[i]->typePtr && strcmp(argv[i]->typePtr->name, "list") == 0) {
+			if (interpreter_->is_list(argv[i])) {
 				std::cerr << '{' << Tcl_GetString(argv[i]) << '}';
 			} else {
 				std::cerr << Tcl_GetString(argv[i]);
 			}
 		}
 		std::cerr << ": " << e.what() << "\n";
-		return;
-	} catch (...) {//std::exception & e) {
-		throw;
+		return TCL_ERROR;
+	} catch (...) {
+		std::cerr << "Unknown error.\n";
+		return TCL_ERROR;
 	}
-	post_process_policies(interp, policies_, argv + ai, false);
+	return TCL_OK;
+}
+template <typename Cparm, typename Conv, typename ...Over>
+int overloaded_callback<Cparm, Conv, Over...>::callback_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
+	this_t * this_p = (this_t *) cd;
+
+	return this_p->checked_invoke_impl(nullptr, interp, objc, objv, false);
+}
+
+template <typename Cparm, typename Conv, typename ...Over>
+void overloaded_callback<Cparm, Conv, Over...>::install() {
+	Tcl_CreateObjCommand(interpreter_->get_interp(), name_.c_str(), callback_handler, (ClientData) this, 0);
+}
+template <typename Cparm, typename Conv, typename ...Over>
+void overloaded_callback<Cparm, Conv, Over...>::uninstall() {
+	Tcl_DeleteCommand(interpreter_->get_interp(), name_.c_str());
 }
 }
+#undef COLD
 
 #include "cpptcl/cpptcl_object.h"
 
-#ifdef CPPTCL_MANAGED_CLASS
 template <typename C, typename ...Ts>
 object interpreter::call_managed_constructor<C, Ts...>::operator()(Ts... ts) {
 	object ret = interp_->makeobj(new C(ts...), true, [this](C * p) {
 									  std::ostringstream oss;
-									  oss << "p" << p << ".";
+									  oss << object_namespace_name << "::" << p << ".";
 									  Tcl_DeleteCommand(interp_->get_interp(), oss.str().c_str());
-									  //std::cerr << oss.str() << " removed\n";
 									  delete p;
 								  });
-	if (false) {
-		std::cerr << "managed_create " << ret.get_object()
-				  << " " << ret.get_object()->internalRep.twoPtrValue.ptr1
-				  << " " << ret.get_object()->internalRep.twoPtrValue.ptr2
-				  << "\n";
-	}
 	return ret;
 }
-#endif
+
+inline std::string interpreter::objinfo(object const & o) {
+	Tcl_Obj * oo = o.get_object();
+	std::ostringstream oss;
+	oss << "obj=" << oo << " refcount=" << oo->refCount << " typePtr=" << oo->typePtr << " typename=" << (oo->typePtr ? oo->typePtr->name : "(notype)") << " ptr1=" << oo->internalRep.twoPtrValue.ptr1 << " ptr2=" << oo->internalRep.twoPtrValue.ptr2 << "\n";
+	return oss.str();
+}
+
+template <typename ...Ts>
+inline object any<Ts...>::as_object() {
+	return object(this->o_);
+}
 
 namespace details {
-template <int ArgOffset, typename TTArg, std::size_t In, std::size_t Ii, typename ...Ts>
-typename details::fix_variadic_return<TTArg, Ii + 1 == In>::type do_cast(interpreter * tcli, std::pair<Tcl_ObjType **, Tcl_ObjType **> objecttypes, ppack<Ts...> pack, bool variadic, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[], int getoptc, Tcl_Obj * CONST getoptv[], policies const & pol) {
+template <int i, int sz, int arg, int nargs, typename Conv>
+struct conversion_offset {
+	static const int value =
+		(std::is_same<typename std::tuple_element<i, Conv>::type, std::integral_constant<int, arg> >::value ||
+		 std::is_same<typename std::tuple_element<i, Conv>::type, std::integral_constant<int, -(nargs - arg)> >::value)
+		? i + 1 : conversion_offset<i + 2, sz, arg, nargs, Conv>::value;
+};
+
+template <int sz, int arg, int nargs, typename Conv>
+struct conversion_offset<sz, sz, arg, nargs, Conv> {
+	static const int value = -1;
+};
+template <int arg, int nargs, typename Conv>
+struct conversion_offset<0, 0, arg, nargs, Conv> {
+	static const int value = -1;
+};
+
+template <int ArgOffset, int ConvOffset, typename TTArg, std::size_t In, std::size_t Ii, typename ...Ts, typename Conv, typename C>
+typename details::fix_variadic_return<TTArg, Ii + 1 == In>::type do_cast(interpreter * tcli, std::pair<Tcl_ObjType **, Tcl_ObjType **> objecttypes, ppack<Ts...> pack, bool variadic, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[], int getoptc, Tcl_Obj * CONST getoptv[], policies const & pol, Conv const & conv, C * this_p) {
 	typedef typename remove_rc<TTArg>::type TT;
 
 	static const bool is_variadic_arg = is_variadic<TT>::value;
@@ -1925,38 +2442,50 @@ typename details::fix_variadic_return<TTArg, Ii + 1 == In>::type do_cast(interpr
 
 	static const bool is_any_arg = is_any<TT>::value;
 	static const bool is_any_list_arg = is_any_arg && all_lists<TT>::value;
-	
+
 	typedef typename optional_unpack<TT>::type opt_unpack_t;
 
-	//std::cerr << "do_cast argi=" << Ii << "/" << In << " argoff=" << ArgOffset << " objc=" << objc << " " << typeid(TTArg).name() << "\n";
+	static const int conversion = conversion_offset<0, std::tuple_size<Conv>::value, Ii + ConvOffset, In + ConvOffset, Conv>::value;
+
+	if constexpr (conversion >= 0) {
+		using conv_t = typename std::tuple_element<conversion, Conv>::type;
+		if constexpr (std::is_invocable<conv_t, Tcl_Obj *>::value) {
+			return std::get<conversion>(conv)(objv[Ii]);
+		} else if constexpr (std::is_invocable<conv_t, C *, int, Tcl_Obj * const *, int>::value) {
+			return std::get<conversion>(conv)(this_p, objc, objv, ArgOffset + Ii);
+		} else if constexpr (std::is_invocable<conv_t, int, Tcl_Obj * const *, int>::value) {
+			return std::get<conversion>(conv)(objc, objv, ArgOffset + Ii);
+		} else if constexpr (std::is_invocable<conv_t, TTArg>::value) {
+			//return std::get<conversion>(conv)(do_cast<0, ConvOffset, opt_unpack_t, In, Ii>(tcli, objecttypes, pack, variadic, interp, getoptc, getoptv, getoptc, getoptv, pol, std::tuple<>(), this_p));
+		} else {
+			static_assert(Conv::no_such_member);
+			std::cerr << "_Z" << typeid(this_p).name() << "\n";
+			throw tcl_error("conversion function has incompatible signature. this ought to be a compile time error");
+		}
+	}
+
 	if constexpr (is_old_variadic_arg) {
 		if (pol.variadic_) {
 			return details::get_var_params(tcli->get(), objc, objv, Ii + ArgOffset, pol);
 		}
 	}
-		
+
 	if constexpr (is_optional_arg || is_getopt_arg) {
 		if constexpr (is_getopt_arg) {
 			static const int getopti = getopt_index<0, Ii, 0, Ts...>::value;
-			//std::cerr << "getopti " << getopti << " " << getoptv[getopti] << "\n";
 
 			if (getoptv[getopti]) {
 				if constexpr (std::is_same<TT, getopt<bool> >::value) {
-					//std::cerr << "truebool\n";
 					return TT(true, true);
 				} else {
-					//std::cerr << "optional\n";
-					return TT(do_cast<0, opt_unpack_t, In, Ii>(tcli, objecttypes, pack, variadic, interp, getoptc, getoptv, getoptc, getoptv, pol), true);
-					//return TT(tcli->template tcl_cast<opt_unpack_t>(interp, getoptv[getopti], cpptcl_byref), true);
+					return TT(do_cast<0, ConvOffset, opt_unpack_t, In, Ii>(tcli, objecttypes, pack, variadic, interp, getoptc, getoptv, getoptc, getoptv, pol, conv, this_p), true);
 				}
 			} else {
-				//std::cerr << "falsebool\n";
 				return TT(opt_unpack_t(), false);
 			}				
 		} else {
 			if (objc > Ii + ArgOffset) {
-				return TT(do_cast<ArgOffset, opt_unpack_t, In, Ii>(tcli, objecttypes, pack, variadic, interp, objc, objv, getoptc, getoptv, pol), true);
-				//return { tcli->template tcl_cast<opt_unpack_t>(interp, objv[Ii + ArgOffset], cpptcl_byref), true };
+				return TT(do_cast<ArgOffset, ConvOffset, opt_unpack_t, In, Ii>(tcli, objecttypes, pack, variadic, interp, objc, objv, getoptc, getoptv, pol, conv, this_p), true);
 			} else {
 				return { typename std::decay<opt_unpack_t>::type(), false };
 			}
@@ -1964,24 +2493,18 @@ typename details::fix_variadic_return<TTArg, Ii + 1 == In>::type do_cast(interpr
 	} else if constexpr (is_list_arg) {
 		if (objv[Ii + ArgOffset]->typePtr) {
 			Tcl_ObjType * ot = tcli->get_objtype<list_unpack_t>();
-			if (strcmp(objv[Ii + ArgOffset]->typePtr->name, "list") == 0) {
+			if (tcli->is_list(objv[Ii + ArgOffset])) {
 				return TT(tcli, objv[Ii + ArgOffset], objecttypes.first);
-				//ot return TT(tcli, objv[Ii + ArgOffset], ot);
-				//return return_dummy_value<TT, !is_list_arg>::doit(tcli, objv[Ii + ArgOffset], ot);
 			} else {
 				Tcl_Obj * lo = Tcl_NewListObj(1, objv + Ii + ArgOffset);
-				//std::cerr << "create listone " << Tcl_GetString(objv[Ii + ArgOffset]) << " " << (ot ? ot->name : "") << "\n";
 				return TT(tcli, lo, objecttypes.first, true);
-				//ot return TT(tcli, lo, ot, true);
-				//return return_dummy_value<TT, !is_list_arg>::doit(tcli, lo, ot);
 			}
 		} else {
 			return TT(nullptr, nullptr, nullptr);
-			//throw tcl_error("expecting object at index" + std::to_string(Ii + ArgOffset));
 		}
 	} else if constexpr (is_any_arg) {
 		if (objv[Ii + ArgOffset]->typePtr) {
-			if (strcmp(objv[Ii + ArgOffset]->typePtr->name, "list") == 0) {
+			if (tcli->is_list(objv[Ii + ArgOffset])) {//->typePtr == list_type_) {
 				if constexpr (is_any_list_arg) {
 					int len;
 					if (Tcl_ListObjLength(interp, objv[Ii + ArgOffset], &len) == TCL_OK) {
@@ -2013,27 +2536,17 @@ typename details::fix_variadic_return<TTArg, Ii + 1 == In>::type do_cast(interpr
 					return TT(tcli, objv[Ii + ArgOffset], objecttypes.first);
 				}
 			}
-			//return return_dummy_value<TT, !is_any_arg>::doit(ret.set(tcli, objv[Ii + ArgOffset]));
 		} else {
 			if constexpr (is_any_list_arg) {
 				return TT(nullptr, nullptr, nullptr);
 			} else {
 				throw tcl_error("any<> argument does not map to an object");
 			}
-			//return return_dummy_value<TT, !is_any_arg>::doit(interp, nullptr);
-			//return TT(nullptr, nullptr);
 		}
 	} else {
 		if constexpr (is_variadic_arg) {
-			//return details::get_var_params(interp, objc, objv, In + ArgOffset - 1, pol);
-			//return details::return_dummy_value<TT, !is_variadic_arg>::doit(details::get_var_params(interp, objc, objv, In + ArgOffset - 1, pol));
 			return TT(tcli, objc, objv);
 		} else {
-			//} else {
-			//return details::tcl_cast<TT>::from(interp, objv[Ii + ArgOffset], cpptcl_byref);
-			//}
-			//std::cerr << "regular arg " << Tcl_GetString(objv[Ii + ArgOffset]) << " " << objv[Ii + ArgOffset] << " " << Ii << " " << ArgOffset << " " << objv[Ii + ArgOffset]->typePtr << "[" << (objv[Ii + ArgOffset]->typePtr ? objv[Ii + ArgOffset]->typePtr->name : "") << "]\n";
-			//return details::tcl_cast<TT>::from(interp, objv[Ii + ArgOffset], false);
 			if constexpr (std::is_pointer<opt_unpack_t>::value && std::is_class<typename std::remove_pointer<opt_unpack_t>::type>::value) {
 				return tcli->template tcl_cast<typename std::remove_cv<typename std::remove_reference<opt_unpack_t>::type>::type>(interp, objv[Ii + ArgOffset], false, *objecttypes.first);
 			} else {
@@ -2054,9 +2567,9 @@ void interpreter::defvar(std::string const & name, T & v) {
 		});
 }
 
-template <typename C>
+template <typename C, typename ...Extra>
 template <typename T>
-interpreter::function_definer<C> & interpreter::function_definer<C>::defvar(std::string const & name, T C::*t) {
+interpreter::function_definer<C, Extra...> & interpreter::function_definer<C, Extra...>::defvar(std::string const & name, T C::*t) {
 	return def(name, [t] (opt<T> const & arg) -> T {
 				   if (arg) {
 					   *t = arg;
@@ -2065,31 +2578,88 @@ interpreter::function_definer<C> & interpreter::function_definer<C>::defvar(std:
 			   });
 }
 
-template <typename C>
-template <typename T>
-interpreter::class_definer<C> & interpreter::class_definer<C>::defvar(std::string const & name, T C::*varp) {
-	return this->def(name, [varp] (C * this_p, opt<T> const & val) -> T {
+template <typename C, typename ...Extra>
+template <typename CC, typename T>
+interpreter::class_definer<C, Extra...> & interpreter::class_definer<C, Extra...>::defvar(std::string const & name, T CC::*varp) {
+	return this->def(name, [varp] (CC * this_p, opt<T> const & val) -> T {
 						 if (val) this_p->*varp = *val;
 						 return this_p->*varp;
 					 });
 }
 
+template <typename C, typename ...WExtra>
+template <typename Fn, typename ...Extra, std::size_t ...Is>
+interpreter::function_definer<C, WExtra...> & interpreter::function_definer<C, WExtra...>::def2(std::string const & name, Fn fn, std::index_sequence<Is...>, Extra... extra) {
+	if constexpr (std::is_same<C, details::no_class>::value) {
+		interp_->def(name, fn, std::get<Is>(with_extra)..., extra...);
+	} else {
+		interp_->def(name, fn, this_p_, std::get<Is>(with_extra)..., extra...);
+	}
+	return *this;
+}
+
+template <typename C, typename ...WExtra>
+template <typename Fn, std::size_t ...Is, typename ...Extra>
+interpreter::class_definer<C, WExtra...> & interpreter::class_definer<C, WExtra...>::def2(std::string const & name, Fn f, std::index_sequence<Is...>, Extra... extra) {
+	const bool epol = std::tuple_size<decltype(eac(extra...))>::value != sizeof...(extra);
+	auto pol = epol ? eap(extra...) : eap(std::get<Is>(with_extra)...);
+	
+	auto convtu = std::tuple_cat(eac(extra...), eac(std::get<Is>(with_extra)...));
+	auto wrapped = eaw(f, std::get<Is>(with_extra)...);
+	
+	typedef typename details::attributes_merge<Extra..., WExtra...>::type attrs;
+	
+	ch_->register_method(name, new callback_t<C, decltype(convtu), decltype(wrapped), details::has_policies<WExtra...>::value || details::has_policies<Extra...>::value, attrs>
+						 (interp_, wrapped, name, pol, convtu),
+						 interp_->get_interp(), managed_);
+	return *this;
+}
+
+template <typename C, typename ...WExtra>
+template <typename Fn, std::size_t ...Is, typename ...Over, typename ...Extra>
+interpreter::class_definer<C, WExtra...> & interpreter::class_definer<C, WExtra...>::def2(std::string const & name, overloaded<Over...> const & over, std::index_sequence<Is...> seq, Extra... extra) {
+	const bool epol = std::tuple_size<decltype(eac(extra...))>::value != sizeof...(extra);
+	auto convtu = std::tuple_cat(eac(extra...), eac(std::get<Is>(with_extra)...));
+	
+	typedef typename details::attributes_merge<Extra..., WExtra...>::type attrs;
+
+	ch_->register_method(name, new details::overloaded_callback<details::callback_attributes<C, attrs>, decltype(convtu), Over...>
+						 (interp_, over, name, epol ? eap(extra...) : eap(std::get<Is>(with_extra)...), convtu),
+						 interp_->get_interp(), managed_);
+	return *this;
+}
+
+template <class C, typename ...Ts, typename ...Extra>
+interpreter::class_definer<C, Extra...> interpreter::class_(std::string const &name, init<Ts...> const & init_arg, Extra... extra) {
+	typedef callback_t<details::no_class, std::tuple<>, C * (*)(Ts...), true> callback_type;
+	
+	details::class_handler<C> * ch = get_class_handler(name);
+	if (ch && ! init_arg.default_) {
+		throw tcl_error("overloaded constructors not implemented");
+	}
+	if (!ch) {
+		ch = new details::class_handler<C>();
+		add_class(name, ch);
+		add_constructor(name, ch, new callback_type(this, &call_constructor<C, Ts...>::doit, name, extra...));
+	}
+	return class_definer<C, Extra...>(ch, this, false, extra...);
+}
+
+template <class C, typename ...Extra>
+interpreter::class_definer<C, Extra...> interpreter::class_(std::string const &name, details::no_init_type const &, Extra... extra) {
+	details::class_handler<C> * ch = static_cast<details::class_handler<C> *>(get_class_handler(name));
+	if (! ch) {
+		ch = new details::class_handler<C>();
+		add_class(name, ch);
+	}
+	return class_definer<C, Extra...>(ch, this, false, extra...);
+}
+
+
 inline void interpreter::setVar(std::string const & name, object const & value) {
 	object name_obj(name);
 
-#if 0
-	Tcl_Obj * ro2 = Tcl_ObjGetVar2(interp_, name_obj.get_object(), nullptr, 0);
-	Tcl_Obj * ro;
-	{
-		object value2 = value.duplicate();
-		std::cerr << "sharedo1: " << value.shared() << " " << name_obj.shared() << " " << value.get_object()->refCount << " " << value2.get_object() << " " << ro2 << " " << (ro2 ? ro2->refCount : -22) << "\n";
-		ro = Tcl_ObjSetVar2(interp_, name_obj.get_object(), nullptr, value2.get_object(), 0);
-	}
-
-	std::cerr << "sharedo2: " << value.shared() << " " << name_obj.shared() << " " << ro << " " << ro2 << " " << value.get_object() << " " << ro->refCount << " " << value.get_object()->refCount << "\n";
-#else
 	Tcl_ObjSetVar2(interp_, name_obj.get_object(), nullptr, value.get_object(), 0);
-#endif
 }
 
 template <typename T>
@@ -2097,15 +2667,12 @@ void interpreter::setVar(std::string const & name, T const & value) {
 	object val_obj(value);
 	object name_obj(name);
 
-	std::cerr << "shared1: " << val_obj.shared() << " " << name_obj.shared() << "\n";
 	Tcl_ObjSetVar2(interp_, name_obj.get_object(), nullptr, val_obj.get_object(), 0);
-	std::cerr << "shared2: " << val_obj.shared() << " " << name_obj.shared() << "\n";
 }
 
 template <typename OT, typename DEL>
 void interpreter::makeobj_inplace(OT * n, object & obj, bool owning, DEL delfn) {
-	Tcl_Obj * o = obj.get_object(); //Tcl_NewObj();
-	//Tcl_Obj * o = Tcl_NewObj();
+	Tcl_Obj * o = obj.get_object();
 
 	if (Tcl_IsShared(o)) {
 		throw tcl_error("cannot modify shared object in-place");
@@ -2119,7 +2686,6 @@ void interpreter::makeobj_inplace(OT * n, object & obj, bool owning, DEL delfn) 
 		} else {
 			o->internalRep.twoPtrValue.ptr2 = new interpreter::shared_ptr_deleter<OT>(n, delfn); //new interpreter::dyn_deleter<OT>(); //nullptr;
 		}
-		//o->internalRep.twoPtrValue.ptr2 = new interpreter::dyn_deleter<OT>(); //nullptr;
 	} else {
 		o->internalRep.twoPtrValue.ptr2 = nullptr;
 	}
@@ -2132,7 +2698,6 @@ void interpreter::makeobj_inplace(OT * n, object & obj, bool owning, DEL delfn) 
 		throw tcl_error("type lookup failed");
 	}
 	Tcl_InvalidateStringRep(o);
-	//return object(o, true);
 }
 template <typename OT, typename DELFN>
 object interpreter::makeobj(OT * p, bool owning, DELFN delfn) {
@@ -2150,7 +2715,6 @@ void interpreter::setVar(std::string const & name, object & obj) {
 	object name_obj(name);
 	Tcl_ObjSetVar2(interp_, name_obj.get_object(), nullptr, obj.get_object(), 0);
 }
-
 
 template <typename R, typename ...Ts>
 struct Bind {

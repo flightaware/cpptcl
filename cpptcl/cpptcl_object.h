@@ -267,18 +267,4 @@ class object {
 	Tcl_Interp *interp_;
 };
 
-
-// available specializations for object::get
-#if 0
-template <> bool object::get<bool>(interpreter &i) const;
-template <> double object::get<double>(interpreter &i) const;
-template <> int object::get<int>(interpreter &i) const;
-template <> long object::get<long>(interpreter &i) const;
-template <> char const *object::get<char const *>(interpreter &i) const;
-template <> std::string object::get<std::string>(interpreter &i) const;
-template <> std::vector<char> object::get<std::vector<char>>(interpreter &i) const;
-#endif
-
-
-
 #endif /* CPPTCL_OBJECT_H */
