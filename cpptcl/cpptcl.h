@@ -318,6 +318,11 @@ struct getopt : public optional<T> {
 };
 
 template <typename T>
+struct getopt_d : public optional<T> {
+	using optional<T>::optional;
+};
+
+template <typename T>
 using opt = optional<T>;
 
 template <typename ...Ts>
@@ -633,6 +638,20 @@ struct is_getopt<getopt<T> const &> {
 };
 
 template <typename T>
+struct is_getopt_d {
+	static const bool value = false;
+};
+template <typename T>
+struct is_getopt_d<getopt_d<T> > {
+	static const bool value = true;
+};
+template <typename T>
+struct is_getopt_d<getopt_d<T> const &> {
+	static const bool value = true;
+};
+
+
+template <typename T>
 struct optional_unpack {
 	typedef T type;
 };
@@ -642,6 +661,10 @@ struct optional_unpack<optional<T> > {
 };
 template <typename T>
 struct optional_unpack<getopt<T> > {
+	typedef T type;
+};
+template <typename T>
+struct optional_unpack<getopt_d<T> > {
 	typedef T type;
 };
 
@@ -675,6 +698,15 @@ template <typename T, typename ...Ts>
 struct num_getopt<T, Ts...> {
 	static const int value = num_getopt<Ts...>::value + (is_getopt<T>::value ? 1 : 0);
 };
+template <typename ...Ts>
+struct num_getopt_d {
+	static const int value = 0;
+};
+template <typename T, typename ...Ts>
+struct num_getopt_d<T, Ts...> {
+	static const int value = num_getopt_d<Ts...>::value + (is_getopt_d<T>::value ? 1 : 0);
+};
+
 
 template <std::size_t Ix, std::size_t Itarget, std::size_t Ipos, typename ...Ts>
 struct getopt_index {
@@ -729,12 +761,20 @@ struct visit_impl<F, Fs...> {
 				if (arg_list_t li = a.template as<arg_list_t>()) {
 					if constexpr (std::is_invocable<F, decltype(li.at(0))>::value) {
 						for (auto && i : li) {
-							f(i);
+							if constexpr (std::is_same<typename std::invoke_result<F, decltype(li.at(0))>::type, bool>::value) {
+								if (! f(i)) break;
+							} else {
+								f(i);
+							}
 						}
 					} else if constexpr (std::is_invocable<F, decltype(li.at(0)), Tcl_Obj *>::value) {
 						for (std::size_t i = 0; i < li.size(); ++i) {
 							auto both = li.with_obj_at(i);
-							f(both.first, both.second);
+							if constexpr (std::is_same<typename std::invoke_result<F, decltype(li.at(0)), Tcl_Obj *>::type, bool>::value) {
+								if (! f(both.first, both.second)) break;
+							} else {
+								f(both.first, both.second);
+							}
 						}
 					}
 					return true;
@@ -778,7 +818,14 @@ struct generate_hasarg {
 template <int I, typename T, typename ...Ts>
 struct generate_hasarg<I, T, Ts...> {
 	static void invoke(bool * arr, std::string * opts, std::string * defaults, const char * p, bool may_have_defaults) {
-		if (!is_getopt<T>::value) {
+		if constexpr (is_getopt_d<T>::value) {
+			while (*p && isspace(*p)) ++p;
+			if (p) {
+				const char * pend = p;
+				while (*pend && !isspace(*pend) && *pend != '=') ++pend;
+			}
+			generate_hasarg<I, Ts...>::invoke(arr, opts, defaults, p, may_have_defaults);
+		} else if constexpr (!is_getopt<T>::value) {
 			generate_hasarg<I, Ts...>::invoke(arr, opts, defaults, p, may_have_defaults);
 		} else {
 			arr[I] = !std::is_same<typename remove_rc<T>::type, getopt<bool> >::value;
@@ -918,6 +965,11 @@ template <typename T, bool Last>
 struct fix_variadic_return<getopt<T> const &, Last> {
 	typedef getopt<T> type;
 };
+template <typename T, bool Last>
+struct fix_variadic_return<getopt_d<T> const &, Last> {
+	typedef getopt_d<T> type;
+};
+
 template <typename T, bool Last>
 struct fix_variadic_return<list<T> const &, Last> {
 	typedef list<T> type;
@@ -1127,7 +1179,7 @@ class callback_v : public callback_base_type<Cparm>::type {
 	policies policies_;
 	functor_type f_;
 
-	static const int num_opt = num_getopt<Ts...>::value;
+	static const int num_opt = num_getopt<Ts...>::value + num_getopt_d<Ts...>::value;
 	std::string opts_[num_opt], defaults_[num_opt];
 
 	bool has_arg_[num_opt + 1] = { false };
@@ -1537,10 +1589,31 @@ class interpreter {
 	void want_abort() {
 		want_abort_ = true;
 	}
-  private:
+
+	static std::function<void(interpreter *)> capture_callback;
+private:
 	interpreter(const interpreter &i);
 	interpreter();
 
+	static bool static_initialized_;
+
+	static int capture_interpreter_init(Tcl_Interp * interp) {
+		if (capture_callback) {
+			interpreter * tcli = new interpreter(interp, false);
+			capture_callback(tcli);
+		}
+		return TCL_OK;
+	}
+	
+	static void static_initialize() {
+		if (! static_initialized_) {
+			Tcl_StaticPackage(nullptr, "Capture_interpreter", capture_interpreter_init, capture_interpreter_init);
+			static_initialized_ = true;
+		}
+	}
+
+	
+	
 	class TclChannelStreambuf : public std::streambuf {
 	private:
 		Tcl_Channel channel_;
@@ -1839,6 +1912,10 @@ public:
 		
 		template <typename T>
 		function_definer & defvar(std::string const & name, T C::*t) COLD;
+		//template <typename T>
+		//function_definer & defvar(std::string const & name, T C::&t) {
+		//	return defvar(name, &t);
+		//}
 		
 		C * this_p_;
 		interpreter * interp_;
@@ -1911,6 +1988,7 @@ public:
 	void def(std::string const & name, R (C::*f)(Ts...), C * this_p, Extra... extra) {
 		def(name, [this_p, f](Ts... args) { return (this_p->*f)(args...); }, extra...);
 	}
+
 	
 	template <typename ...Over, typename ...Extra>
 	void def(std::string const & name, overloaded<Over...> over, Extra... extra) {
@@ -2108,7 +2186,8 @@ public:
 			o->bytes[name.size()] = 0;
 			o->length = name.size();
 		}
-		static int set(Tcl_Interp *, Tcl_Obj *) {
+		static int set(Tcl_Interp * interp, Tcl_Obj * o) {
+			//std::cerr << "setfromany " << interp << " " << o << "\n";
 			return TCL_OK;
 		}
 		static int set_v(Tcl_Interp *, Tcl_Obj *) {
@@ -2256,7 +2335,11 @@ public:
 						if (Tcl_ListObjIndex(i, o, 0, &o2) == TCL_OK) {
 							if (otp == o2->typePtr) {
 								return (T) o2->internalRep.twoPtrValue.ptr1;
+							} else {
+								throw tcl_error("function argument has wrong type. expect " + details::tcl_typename(otp) + ", got " + details::tcl_typename(o2->typePtr));
 							}
+						} else {
+							throw tcl_error("internal error. cannot access valid list index");
 						}
 					} else {
 						throw tcl_error("Expected single object, got list");
@@ -2338,7 +2421,7 @@ public:
 	void create_namespace(std::string const &name);
 
 	// helper for cleaning up callbacks in non-managed interpreters
-	void clear_definitions(Tcl_Interp *);
+	void clear_definitions();
 
   private:
 	void operator=(const interpreter &);
@@ -2501,8 +2584,9 @@ void callback_v<Cparm, Convs, Fn, R, Ts...>::uninstall(interpreter * tcli) {
 
 template <typename Cparm, typename Convs, typename Fn, typename R, typename ...Ts>
 void callback_v<Cparm, Convs, Fn, R, Ts...>::invoke_impl(interpreter * tcli, void * pv, Tcl_Interp * interp, int argc, Tcl_Obj * const argv [], bool object_dot_method) {
-	static const int num_gopt = num_getopt<Ts...>::value;
-	static const int num_opt  = num_optional<Ts...>::value;
+	static const int num_gopt   = num_getopt<Ts...>::value;
+	static const int num_gopt_d = num_getopt_d<Ts...>::value;
+	static const int num_opt    = num_optional<Ts...>::value;
 	Tcl_Obj * getopt_argv[num_gopt + 1] = { nullptr };
 	bool getopt_allocated[num_gopt + 1] = { false };
 	Tcl_Obj boolean_dummy_object;
@@ -2538,7 +2622,7 @@ void callback_v<Cparm, Convs, Fn, R, Ts...>::invoke_impl(interpreter * tcli, voi
 		return;
 	}
 	
-	if (num_gopt) {
+	if constexpr (num_gopt) {
 		for (; ai < argc; ++ai) {
 			char * s = Tcl_GetString(argv[ai]);
 			if (s[0] == '-') {
@@ -2580,7 +2664,7 @@ void callback_v<Cparm, Convs, Fn, R, Ts...>::invoke_impl(interpreter * tcli, voi
 			}
 		}
 	}
-	check_params_no(argc - ai, sizeof...(Ts) - (has_variadic_ || policies_.variadic_ ? 1 : 0) - num_gopt - num_opt, has_variadic_ || policies_.variadic_ ? -1 : sizeof...(Ts) - num_gopt, policies_.usage_);
+	check_params_no(argc - ai, sizeof...(Ts) - (has_variadic_ || policies_.variadic_ ? 1 : 0) - num_gopt - num_opt - num_gopt_d, has_variadic_ || policies_.variadic_ ? -1 : sizeof...(Ts) - num_gopt - num_gopt_d, policies_.usage_);
 	
 	auto dealloc = [&](void *) {
 		if (may_have_defaults && any_getopt_allocated) {
@@ -2593,7 +2677,7 @@ void callback_v<Cparm, Convs, Fn, R, Ts...>::invoke_impl(interpreter * tcli, voi
 	};
 	std::unique_ptr<void *, decltype(dealloc)> dealloc_raii(0, dealloc);
 	
-	do_invoke(std::make_index_sequence<sizeof... (Ts)>(), tcli, (C *) pv, interp, argc - ai, argv + ai, num_gopt, getopt_argv, policies_, void_return<std::is_same<R, void>::value>());
+	do_invoke(std::make_index_sequence<sizeof... (Ts)>(), tcli, (C *) pv, interp, argc - ai, argv + ai, num_gopt + num_gopt_d, getopt_argv, policies_, void_return<std::is_same<R, void>::value>());
 	if (pol_t::postproc) {
 		tcli->post_process_policies(interp, policies_, argv + ai, false);
 	}
@@ -2753,9 +2837,13 @@ typename details::fix_variadic_return<TTArg, Ii + 1 == In>::type do_cast(interpr
 	static const bool is_any_list_arg = is_any_arg && all_lists<TT>::value;
 
 	typedef typename optional_unpack<TT>::type opt_unpack_t;
-
+	
 	static const int conversion = conversion_offset<0, std::tuple_size<Conv>::value, Ii + ConvOffset, In + ConvOffset, Conv>::value;
 
+	if constexpr (is_getopt_d<TT>::value) {
+		return TT(opt_unpack_t(), false, false);
+	}
+	
 	if constexpr (conversion >= 0) {
 		using conv_t = typename std::tuple_element<conversion, Conv>::type;
 		if constexpr (std::is_invocable<conv_t, Tcl_Obj *>::value) {
@@ -2889,12 +2977,12 @@ void interpreter::defvar(std::string const & name, T & v) {
 template <typename C, typename ...Extra>
 template <typename T>
 interpreter::function_definer<C, Extra...> & interpreter::function_definer<C, Extra...>::defvar(std::string const & name, T C::*t) {
-	return def(name, [t] (opt<T> const & arg) -> T {
-				   if (arg) {
-					   *t = arg;
-				   }
-				   return *t;
-			   });
+	return this->def(name, [t, this] (opt<T> const & arg) -> T {
+						 if (arg) {
+							 this_p_->*t = arg;
+						 }
+						 return this_p_->*t;
+					 });
 }
 
 template <typename C, typename ...Extra>

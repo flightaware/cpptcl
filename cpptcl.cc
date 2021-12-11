@@ -87,7 +87,6 @@ void details::set_result(Tcl_Interp *interp, named_pointer_result p) {
 	Tcl_SetObjResult(interp, to);
 }
 
-
 void details::set_result(Tcl_Interp *interp, object const &o) { Tcl_SetObjResult(interp, o.get_object()); }
 
 void details::check_params_no(int objc, int required, int maximum, const std::string &message) {
@@ -121,43 +120,6 @@ object details::get_var_params(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv
 namespace // anonymous
 {
 
-// map of polymorphic callbacks
-typedef map<string, shared_ptr<callback_base>> callback_interp_map;
-typedef map<Tcl_Interp *, callback_interp_map> callback_map;
-
-callback_map callbacks;
-callback_map constructors;
-
-// map of call policies
-//typedef map<string, policies> policies_interp_map;
-//typedef map<Tcl_Interp *, policies_interp_map> policies_map;
-
-//policies_map call_policies;
-
-	//typedef std::map<std::string, callback_base *> all_definitions2_t;
-	//typedef std::map<Tcl_Interp *, all_definitions2_t> all_definitions_t;
-	//all_definitions_t all_definitions;
-
-// map of object handlers
-typedef map<string, class_handler_base *> class_handlers_map;
-	//typedef map<Tcl_Interp *, class_interp_map> class_handlers_map;
-
-class_handlers_map class_handlers;
-
-#if 0
-	// helper for finding call policies - returns true when found
-bool find_policies(Tcl_Interp *interp, string const &cmdName, policies_interp_map::iterator &piti) {
-	policies_map::iterator pit = call_policies.find(interp);
-
-	if (pit == call_policies.end()) {
-		return false;
-	}
-
-	piti = pit->second.find(cmdName);
-	return piti != pit->second.end();
-}
-#endif
-	
 extern "C" int object_handler(ClientData cd, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 
 // actual functions handling various callbacks
@@ -479,17 +441,6 @@ void class_handler_base::register_method(string const & name, callback_base * oc
 	methods_[str] = ocb;
 	//policies_[name] = p;
 }
-
-#if 0
-policies &class_handler_base::get_policies(string const &name) {
-	policies_map_type::iterator it = policies_.find(name);
-	if (it == policies_.end()) {
-		throw tcl_error("Trying to use non-existent policy: " + name);
-	}
-
-	return it->second;
-}
-#endif
 
 thread_local Tcl_Obj * object::default_object_ = nullptr;
 
@@ -849,6 +800,8 @@ int interpreter::dot_call_handler(ClientData cd, Tcl_Interp * interp, int objc, 
 }
 
 interpreter::interpreter() : tin_(nullptr), tout_(nullptr), terr_(nullptr) {
+	static_initialize();
+	
 	interp_ = Tcl_CreateInterp();
 	owner_ = true;
 	if (defaultInterpreter) {
@@ -859,6 +812,8 @@ interpreter::interpreter() : tin_(nullptr), tout_(nullptr), terr_(nullptr) {
 }
 
 interpreter::interpreter(Tcl_Interp *interp, bool owner) : tin_(nullptr), tout_(nullptr), terr_(nullptr) {
+	static_initialize();
+
 	interp_ = interp;
 
 	if (! interp_) { interp_ = Tcl_CreateInterp(); }
@@ -878,6 +833,7 @@ interpreter::interpreter(Tcl_Interp *interp, bool owner) : tin_(nullptr), tout_(
 
 interpreter::interpreter(const interpreter &i) : interp_(i.interp_), owner_(i.owner_), tin_(nullptr), tout_(nullptr), terr_(nullptr),
 												 list_type_(i.list_type_), cmdname_type_(i.cmdname_type_), object_namespace_(i.object_namespace_) {
+	static_initialize();
 }
 
 void interpreter::custom_construct(const char * c_name, const char * o_name, void * p) {
@@ -902,9 +858,9 @@ void interpreter::find_standard_types() {
 }
 
 interpreter::~interpreter() {
+	clear_definitions();
 	if (owner_) {
 		// clear all callback info belonging to this interpreter
-		clear_definitions(interp_);
 		Tcl_DeleteInterp(interp_);
 	}
 }
@@ -1003,33 +959,18 @@ void interpreter::create_alias(string const &cmd, interpreter &targetInterp, str
 	}
 }
 
-void interpreter::clear_definitions(Tcl_Interp *interp) {
+void interpreter::clear_definitions() {
 	for (auto & c : all_callbacks_) {
 		Tcl_DeleteCommand(get_interp(), c.first.c_str());
 	}
-
-#if 0
-	{
-		auto it = class_handlers.find(interp);
-		if (it != class_handlers.end()) {
-			for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-				delete it2->second;
-			}
-		}
-		class_handlers.erase(interp);
-	}
-#endif
 }
 
 void interpreter::add_function(string const &name, std::shared_ptr<callback_base> cb) {
-	//Tcl_CreateObjCommand(interp_, name.c_str(), callback_handler, cb, 0);
 	cb->install(this);
 	all_callbacks_.insert(std::pair(name, cb));
-	//all_definitions[interp_][name] = cb;
 }
 
 void interpreter::add_class(string const &name, std::shared_ptr<class_handler_base> chb, bool is_inline) {
-	//class_handlers[name] = chb;
 	all_classes_.insert(std::pair(name, chb));
 	Tcl_ObjType * ot = get_objtype(name.c_str());
 	if (ot) {
@@ -1042,7 +983,6 @@ details::class_handler_base * interpreter::get_class_handler(std::string const &
 	return it2->second.get();
 }
 
-
 void interpreter::add_constructor(string const &name, class_handler_base * chb, std::shared_ptr<callback_base> cb) {
 	constructor_handler_client_data_t * up = new constructor_handler_client_data_t;
 	up->cb = cb.get();
@@ -1051,7 +991,6 @@ void interpreter::add_constructor(string const &name, class_handler_base * chb, 
 	
 	Tcl_CreateObjCommand(interp_, name.c_str(), constructor_handler, up, 0);
 	all_callbacks_.insert(std::pair(name, cb));
-	//	all_definitions[interp_][name] = cb;
 }
 
 void interpreter::add_managed_constructor(string const &name, class_handler_base * chb, std::shared_ptr<callback_base> cb) {
@@ -1062,7 +1001,6 @@ void interpreter::add_managed_constructor(string const &name, class_handler_base
 	
 	Tcl_CreateObjCommand(interp_, name.c_str(), managed_constructor_handler, up, 0);
 	all_callbacks_.insert(std::pair(name, cb));
-	//all_definitions[interp_][name] = cb;
 }
 
 int tcl_cast<int>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
@@ -1079,7 +1017,6 @@ unsigned int tcl_cast<unsigned int>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool
 	}
 	return res;
 }
-
 
 long tcl_cast<long>::from(Tcl_Interp *interp, Tcl_Obj *obj, bool) {
 	long res;
@@ -1189,7 +1126,7 @@ void interpreter::post_process_policies(Tcl_Interp *interp, policies &pol, Tcl_O
 }
 
 tcl_error::tcl_error(std::string const & msg) : msg_(msg), std::runtime_error(msg) {
-	backtrace_size_ = backtrace(backtrace_, sizeof(backtrace_) / sizeof(backtrace_[0]));
+	//backtrace_size_ = backtrace(backtrace_, sizeof(backtrace_) / sizeof(backtrace_[0]));
 }
 tcl_error::tcl_error(Tcl_Interp * interp) : std::runtime_error(Tcl_GetString(Tcl_GetObjResult(interp))), msg_(Tcl_GetString(Tcl_GetObjResult(interp))) {}
 const char * tcl_error::what() const throw() {
@@ -1222,5 +1159,7 @@ const char * tcl_error::what() const throw() {
 
 	decltype(interpreter::obj_type_by_tclname_) interpreter::obj_type_by_tclname_;
 	decltype(interpreter::obj_type_by_cppname_) interpreter::obj_type_by_cppname_;
-	
+	decltype(interpreter::capture_callback) interpreter::capture_callback;
+	bool interpreter::static_initialized_ = false;
 }
+
