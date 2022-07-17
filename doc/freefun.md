@@ -6,7 +6,7 @@ You have already seen an example of how to expose a free C++ function to the Tcl
 
 No matter whether you write an extension module or embed Tcl in a C++ application, the way to expose a free function is alway the same:
 
-```
+```cpp
 i.def("tcl_function_name", cpp_function_name);  
 ```
 
@@ -16,13 +16,13 @@ In the above example, the "tcl_function_name" is a name that will be visible to 
 
 They do not have to be the same, although this is the usual practice, like in the [Quick Start](quickstart.md) examples:
 
-```
+```cpp
 i.def("hello", hello);  
 ```
 
 Suppose that we want to expose the following C++ function:
 
-```
+```cpp
 int sum(int a, int b)  
 {  
      return a + b;  
@@ -31,20 +31,20 @@ int sum(int a, int b)
 
 We can define it in the interpreter like this:
 
-```
-i.def("<span style="font-weight: bold;">add</span>", sum);  
-i.def("<span style="font-weight: bold;">+</span>", sum);  
+```cpp
+i.def("add", sum);  
+i.def("+", sum);  
 ```
 
 so that we can call the sum function from Tcl like this:
 
-```
+```tcl
 add 3 4  
 ```
 
 or:
 
-```
+```tcl
 + 3 4  
 ```
 
