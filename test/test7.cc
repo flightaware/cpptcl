@@ -52,7 +52,7 @@ void test1() {
 		i.eval("fun1 1");
 		assert(false);
 	} catch (tcl_error const &e) {
-		assert(e.what() == std::string("Usage: Needs a usage message."));
+		assert(e.what() == std::string("too few arguments: 1 given, 2 required"));//std::string("Usage: Needs a usage message."));
 	}
 }
 
