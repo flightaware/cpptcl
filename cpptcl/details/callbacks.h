@@ -13,6 +13,8 @@
 #include <tuple>
 #include <utility>
 
+namespace Tcl { namespace details {
+
 template <typename R> class callback0 : public callback_base {
 	typedef R (*functor_type)();
 
@@ -213,3 +215,7 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
   private:
 	functor_type f_;
 };
+
+}
+
+}

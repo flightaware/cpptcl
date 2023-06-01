@@ -13,6 +13,7 @@
 // helper functor for converting Tcl objects to the given type
 // (it is a struct instead of function,
 // because I need to partially specialize it)
+namespace Tcl { namespace details {
 
 template <typename T> struct tcl_cast;
 
@@ -65,3 +66,6 @@ template <> struct tcl_cast<char const *> { static char const *from(Tcl_Interp *
 
 template <> struct tcl_cast<object> { static object from(Tcl_Interp *, Tcl_Obj *, bool byReference = false); };
 
+}
+
+}

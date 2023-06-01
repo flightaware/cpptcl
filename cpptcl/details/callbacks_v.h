@@ -10,6 +10,8 @@
 
 // Note: this file is not supposed to be a stand-alone header
 
+namespace Tcl { namespace details {
+
 template <typename R> class callback1<R, object const &> : public callback_base {
 	typedef object const &T1;
 	typedef R (*functor_type)(T1);
@@ -199,3 +201,7 @@ template <typename R, typename T1, typename T2, typename T3, typename T4, typena
   private:
 	functor_type f_;
 };
+
+}
+
+}

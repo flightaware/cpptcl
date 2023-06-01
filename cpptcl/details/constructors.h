@@ -9,6 +9,7 @@
 //
 
 // Note: this file is not supposed to be a stand-alone header
+namespace Tcl { namespace details {
 
 template <class C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9> struct construct {
 	static C *doit(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, T9 t9) { return new C(t1, t2, t3, t4, t5, t6, t7, t8, t9); }
@@ -49,3 +50,7 @@ template <class C, typename T1> struct construct<C, T1, void, void, void, void, 
 template <class C> struct construct<C, void, void, void, void, void, void, void, void, void> {
 	static C *doit() { return new C(); }
 };
+
+}
+
+}

@@ -110,11 +110,19 @@ void set_result(Tcl_Interp *interp, std::string const &s);
 void set_result(Tcl_Interp *interp, void *p);
 void set_result(Tcl_Interp *interp, object const &o);
 
+}
+
+}
+
 // helper functor for converting Tcl objects to the given type
 #include "cpptcl/details/conversions.h"
 
 // dispatchers able to capture (or ignore) the result
 #include "cpptcl/details/dispatchers.h"
+
+namespace Tcl {
+
+namespace details {
 
 // helper for checking for required number of parameters
 // (throws tcl_error when not met)
@@ -123,7 +131,7 @@ void check_params_no(int objc, int required, const std::string &message);
 // helper for gathering optional params in variadic functions
 object get_var_params(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], int from, policies const &pol);
 
-// the callback_base is used to store callback handlers in a polynorphic map
+// the callback_base is used to store callback handlers in a polymorphic map
 class callback_base {
   public:
 	virtual ~callback_base() {}
@@ -190,6 +198,10 @@ template <class C> class class_handler : public class_handler_base {
 	}
 };
 
+}
+
+}
+
 // factory functions for creating class objects
 #include "cpptcl/details/constructors.h"
 
@@ -201,6 +213,10 @@ template <class C> class class_handler : public class_handler_base {
 
 // helper meta function for figuring appropriate constructor callback
 #include "cpptcl/details/metahelpers.h"
+
+namespace Tcl {
+
+namespace details {
 
 // this class is used to provide the "def" interface for defining
 // class member functions
@@ -444,7 +460,11 @@ class interpreter {
 	bool owner_;
 };
 
+}
+
 #include "cpptcl/cpptcl_object.h"
+
+namespace Tcl {
 
 // the InputIterator should give object& or Tcl_Obj* when dereferenced
 template <class InputIterator> details::result interpreter::eval(InputIterator first, InputIterator last) {
@@ -458,7 +478,7 @@ template <class InputIterator> details::result interpreter::eval(InputIterator f
 	return details::result(interp_);
 }
 
-namespace details {
+}
 
 // additional callback envelopes for variadic functions
 #include "cpptcl/details/callbacks_v.h"
@@ -466,9 +486,10 @@ namespace details {
 // additional method envelopes for variadic methods
 #include "cpptcl/details/methods_v.h"
 
-} // namespace details
 
 #include "cpptcl/details/bind.h"
+
+namespace Tcl {
 
 inline std::ostream & operator<<(std::ostream &os, const object& obj)
 {

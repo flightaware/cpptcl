@@ -9,6 +9,7 @@
 //
 
 // Note: this file is not supposed to be a stand-alone header
+namespace Tcl { namespace details {
 
 template <class C, typename R> class method1<C, R, object const &> : public object_cmd_base {
 	typedef object const &T1;
@@ -261,3 +262,7 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 	cmem_type cf_;
 	bool cmem_;
 };
+
+}
+
+}

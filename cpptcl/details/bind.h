@@ -1,3 +1,5 @@
+namespace Tcl {
+
 template <typename R, typename T1, typename T2 = void, typename T3 = void, typename T4 = void, typename T5 = void, typename T6 = void, typename T7 = void, typename T8 = void, typename T9 = void> struct Bind {
   private:
 	object cmd_;
@@ -173,3 +175,5 @@ template <typename R> struct Bind<R, void, void, void, void, void, void, void, v
 		return (R)(interpreter::getDefault()->eval(obj));
 	}
 };
+
+}
