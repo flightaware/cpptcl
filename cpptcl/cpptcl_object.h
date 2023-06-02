@@ -8,6 +8,8 @@
 #ifndef CPPTCL_OBJECT_H
 #define CPPTCL_OBJECT_H
 
+namespace Tcl {
+
 class object;
 
 /*
@@ -242,5 +244,7 @@ template <> long object::get<long>(interpreter &i) const;
 template <> char const *object::get<char const *>(interpreter &i) const;
 template <> std::string object::get<std::string>(interpreter &i) const;
 template <> std::vector<char> object::get<std::vector<char>>(interpreter &i) const;
+
+}
 
 #endif /* CPPTCL_OBJECT_H */

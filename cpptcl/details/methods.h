@@ -9,6 +9,7 @@
 //
 
 // Note: this file is not supposed to be a stand-alone header
+namespace Tcl { namespace details {
 
 template <class C, typename R> class method0 : public object_cmd_base {
 	typedef R (C::*mem_type)();
@@ -302,3 +303,7 @@ template <class C, typename R, typename T1, typename T2, typename T3, typename T
 	cmem_type cf_;
 	bool cmem_;
 };
+
+}
+
+}

@@ -9,6 +9,7 @@
 //
 
 // Note: this file is not supposed to be a stand-alone header
+namespace Tcl { namespace details {
 
 template <class C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9> struct get_callback_type_for_construct { typedef callback9<C *, T1, T2, T3, T4, T5, T6, T7, T8, T9> type; };
 
@@ -29,3 +30,7 @@ template <class C, typename T1, typename T2> struct get_callback_type_for_constr
 template <class C, typename T1> struct get_callback_type_for_construct<C, T1, void, void, void, void, void, void, void, void> { typedef callback1<C *, T1> type; };
 
 template <class C> struct get_callback_type_for_construct<C, void, void, void, void, void, void, void, void, void> { typedef callback0<C *> type; };
+
+}
+
+}

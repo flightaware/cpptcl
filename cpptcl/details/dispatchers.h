@@ -14,6 +14,8 @@
 // capture its return value
 // further dispatch<void> specialization ignores the res
 
+namespace Tcl { namespace details {
+
 template <typename R> struct dispatch {
 	template <class Functor> static void do_dispatch(Tcl_Interp *interp, Functor f) {
 		R res = f();
@@ -87,3 +89,7 @@ template <> struct dispatch<void> {
 
 	template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, class Functor> static void do_dispatch(Tcl_Interp *, Functor f, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, T9 t9) { f(t1, t2, t3, t4, t5, t6, t7, t8, t9); }
 };
+
+}
+
+}
