@@ -548,7 +548,7 @@ template <> long object::get<long>(interpreter &i) const {
 template <> char const *object::get<char const *>(interpreter &) const { return get(); }
 
 template <> string object::get<string>(interpreter &) const {
-	int len;
+	Tcl_Size len;
 	char const *buf = Tcl_GetStringFromObj(obj_, &len);
 	return string(buf, buf + len);
 }
@@ -562,14 +562,14 @@ double object::asDouble() const { return get<double>(); }
 char const *object::get() const { return Tcl_GetString(obj_); }
 
 char const *object::get(size_t &size) const {
-	int len;
+	Tcl_Size len;
 	unsigned char *buf = Tcl_GetByteArrayFromObj(obj_, &len);
 	size = len;
 	return const_cast<char const *>(reinterpret_cast<char *>(buf));
 }
 
 size_t object::size(interpreter &i) const {
-	int len;
+	Tcl_Size len;
 	int res = Tcl_ListObjLength(i.get(), obj_, &len);
 
 	if (res != TCL_OK) {
@@ -620,7 +620,7 @@ object &object::replace(size_t index, size_t count, object const &o, interpreter
 }
 
 object &object::replace_list(size_t index, size_t count, object const &o, interpreter &i) {
-	int objc;
+	Tcl_Size objc;
 	Tcl_Obj **objv;
 
 	int res = Tcl_ListObjGetElements(i.get(), o.obj_, &objc, &objv);
@@ -673,12 +673,14 @@ interpreter::~interpreter() {
 	}
 }
 
+#if TCL_MAJOR_VERSION < 9
 void interpreter::make_safe() {
 	int cc = Tcl_MakeSafe(interp_);
 	if (cc != TCL_OK) {
 		throw tcl_error(interp_);
 	}
 }
+#endif
 
 result interpreter::eval(string const &script) {
 	int cc = Tcl_Eval(interp_, script.c_str());
