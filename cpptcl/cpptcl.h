@@ -38,6 +38,23 @@
 
 #include "tcl.h"
 
+/* Check, if Tcl version supports Tcl_Size,
+ * which was introduced in Tcl 8.7 and 9.
+ */
+#ifndef TCL_SIZE_MAX
+#include <limits.h>
+#define TCL_SIZE_MAX INT_MAX
+#ifndef Tcl_Size
+typedef int Tcl_Size;
+#endif
+#define TCL_SIZE_MODIFIER ""
+#define Tcl_GetSizeIntFromObj Tcl_GetIntFromObj
+#endif
+/* TCL 9 does not define CONST anymore */
+#ifndef CONST
+#define CONST const
+#endif
+
 // This function is not part of TCL, but is a useful helper.
 extern "C" {
     Tcl_Interp * Tcl_CreateInterpWithStubs(const char *version, int exact);
@@ -360,7 +377,9 @@ class interpreter {
 	interpreter(Tcl_Interp *, bool owner = false);
 	~interpreter();
 
+#if TCL_MAJOR_VERSION < 9
 	void make_safe();
+#endif
 
 	Tcl_Interp *get() const { return interp_; }
 
