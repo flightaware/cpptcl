@@ -26,7 +26,9 @@ int fun5(char const *s) { return std::string(s).size(); }
 void test1() {
 	Tcl_Interp * interp = Tcl_CreateInterp();
 	interpreter i(interp, true);
+#if (TCL_MAJOR_VERSION < 9)
 	i.make_safe();
+#endif
 
 	std::string s = i.eval("return \"ala ma kota\"");
 	assert(s == "ala ma kota");
