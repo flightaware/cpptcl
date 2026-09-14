@@ -22,6 +22,7 @@ jobs:
         PREFIX=/opt/homebrew/opt/tcl-tk@8
         export LDFLAGS="-L$PREFIX/lib"
         export CPPFLAGS="-I$PREFIX/include"
+        export TCL_ROOT=$PREFIX
         make
     - name: install
       run: sudo make install
