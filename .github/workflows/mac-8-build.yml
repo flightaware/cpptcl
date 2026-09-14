@@ -18,7 +18,11 @@ jobs:
         brew update
         brew reinstall tcl-tk@8
     - name: make
-      run: make
+      run: |
+        PREFIX=/opt/homebrew/opt/tcl-tk@8
+        export LDFLAGS="-L$PREFIX/lib"
+        export CPPFLAGS="-I$PREFIX/include"
+        make
     - name: install
       run: sudo make install
     - name: make test
