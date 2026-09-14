@@ -1,4 +1,4 @@
-name: Linux CI
+name: Linux TCL8 build
 
 on:
   push:

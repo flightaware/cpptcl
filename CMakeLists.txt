@@ -6,6 +6,7 @@ include(cmake/version.cmake)
 load_git_properties(cpptcl ${CMAKE_BINARY_DIR}/generated)
 
 set(CPPTCL_VERSION 2.2.8)
+cmake_policy(SET CMP0074 NEW)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to Release as none was specified.")
