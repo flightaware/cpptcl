@@ -654,13 +654,9 @@ interpreter::interpreter(Tcl_Interp *interp, bool owner) {
 	interp_ = interp;
 	owner_ = owner;
 	if (!defaultInterpreter) {
-#ifdef USE_TCL_STUBS
-#ifndef CPPTCL_NO_TCL_STUBS
 		if (Tcl_InitStubs(interp, "8.6-", 0) == NULL) {
 			throw tcl_error("Failed to initialize stubs");
 		}
-#endif
-#endif
 		// Make a copy
 		defaultInterpreter = new interpreter(*this);
 	}
