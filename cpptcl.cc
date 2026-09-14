@@ -655,11 +655,11 @@ interpreter::interpreter(Tcl_Interp *interp, bool owner) {
 	owner_ = owner;
 	if (!defaultInterpreter) {
 #ifdef USE_TCL_STUBS
-//#ifndef CPPTCL_NO_TCL_STUBS
+#ifndef CPPTCL_NO_TCL_STUBS
 		if (Tcl_InitStubs(interp, "8.6-", 0) == NULL) {
 			throw tcl_error("Failed to initialize stubs");
 		}
-//#endif
+#endif
 #endif
 		// Make a copy
 		defaultInterpreter = new interpreter(*this);
