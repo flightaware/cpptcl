@@ -12,7 +12,7 @@ using namespace Tcl;
 void hello() { cout << "Hello C++/Tcl!" << endl; }
 
 int main() {
-	Tcl_Interp * interp = Tcl_CreateInterpWithStubs("8.6", 0);
+	Tcl_Interp * interp = Tcl_CreateInterpWithStubs("8.6-", 0);
 	interpreter i(interp, true);
 	i.def("hello", hello);
 

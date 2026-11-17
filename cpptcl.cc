@@ -654,7 +654,7 @@ interpreter::interpreter(Tcl_Interp *interp, bool owner) {
 	interp_ = interp;
 	owner_ = owner;
 	if (!defaultInterpreter) {
-		if (Tcl_InitStubs(interp, "8.6", 0) == NULL) {
+		if (Tcl_InitStubs(interp, "8.6-", 0) == NULL) {
 			throw tcl_error("Failed to initialize stubs");
 		}
 		// Make a copy
